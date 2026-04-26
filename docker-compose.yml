@@ -47,9 +47,9 @@ services:
       DB_PASSWORD: ametista123
       DB_NAME: ametista_tarot
       JWT_SECRET: your-super-secret-jwt-key-change-in-production
-      NODE_ENV: development
+      NODE_ENV: production
       PORT: 3001
-      FRONTEND_URL: http://localhost:3000
+      FRONTEND_URL: https://ametista.braviaglobal.com.br
     ports:
       - "3001:3001"
     depends_on:
@@ -57,11 +57,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./backend/src:/app/src
     networks:
       - ametista_network
-    command: npm run dev
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ametista-api.rule=Host(`ametista.braviaglobal.com.br`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.ametista-api.entrypoints=websecure"
+      - "traefik.http.routers.ametista-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.ametista-api.loadbalancer.server.port=3001"
 
   frontend:
     build:
@@ -69,17 +72,19 @@ services:
       dockerfile: Dockerfile
     container_name: ametista_frontend
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_API_URL: https://ametista.braviaglobal.com.br/api
     ports:
       - "3002:3000"
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     networks:
       - ametista_network
-    command: npm run dev
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ametista.rule=Host(`ametista.braviaglobal.com.br`)"
+      - "traefik.http.routers.ametista.entrypoints=websecure"
+      - "traefik.http.routers.ametista.tls.certresolver=letsencrypt"
+      - "traefik.http.services.ametista.loadbalancer.server.port=3000"
 
 volumes:
   postgres_data:
