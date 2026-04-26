@@ -41,7 +41,6 @@ export default function ConsultantDashboardPage() {
   const [consultant, setConsultant] = useState<Consultant | null>(null)
   const [connected, setConnected] = useState(false)
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null)
-  const [callStarted, setCallStarted] = useState<{ consultationId: string; clientId: string } | null>(null)
   const [status, setStatus] = useState<'waiting' | 'in-call'>('waiting')
 
   const socketRef = useRef<Socket | null>(null)
@@ -86,7 +85,6 @@ export default function ConsultantDashboardPage() {
     })
 
     socket.on('call-started', (data: { consultationId: string; clientId: string }) => {
-      setCallStarted(data)
       setStatus('in-call')
       setIncomingCall(null)
       if (bellInterval.current) clearInterval(bellInterval.current)
