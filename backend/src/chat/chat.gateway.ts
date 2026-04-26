@@ -10,6 +10,7 @@ import { ChatService } from './chat.service';
 import { PresenceService } from '../presence/presence.service';
 
 @WebSocketGateway({
+  path: '/api/socket.io',
   cors: { origin: '*', credentials: true },
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
