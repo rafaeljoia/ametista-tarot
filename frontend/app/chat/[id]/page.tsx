@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import axios from 'axios'
 import { io, Socket } from 'socket.io-client'
@@ -18,7 +18,6 @@ interface Consultant {
   id: string
   name: string
   specialty: string
-  isAvailable: boolean
   pricePerMinute: number
 }
 
@@ -32,7 +31,9 @@ interface User {
 export default function ChatPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const consultantId = params.id as string
+  const consultationIdFromUrl = searchParams.get('consultationId')
 
   const [user, setUser] = useState<User | null>(null)
   const [consultant, setConsultant] = useState<Consultant | null>(null)
@@ -58,15 +59,13 @@ export default function ChatPage() {
 
     const parsedUser = JSON.parse(userData)
     setUser(parsedUser)
-    consultationId.current = `${parsedUser.id}-${consultantId}`
+    consultationId.current = consultationIdFromUrl || `${parsedUser.id}-${consultantId}`
 
     fetchConsultant(token)
     connectSocket(parsedUser, token)
 
-    return () => {
-      socketRef.current?.disconnect()
-    }
-  }, [consultantId, router])
+    return () => { socketRef.current?.disconnect() }
+  }, [consultantId, router, consultationIdFromUrl])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -99,7 +98,7 @@ export default function ChatPage() {
       setConnected(true)
       socket.emit('join-consultation', {
         userId: parsedUser.id,
-        consultationId: `${parsedUser.id}-${consultantId}`,
+        consultationId: consultationId.current,
       })
     })
 
@@ -127,59 +126,37 @@ export default function ChatPage() {
   const handleSend = () => {
     if (!input.trim() || !socketRef.current || !user) return
 
-    const msgData = {
+    setMessages((prev) => [
+      ...prev,
+      { content: input.trim(), senderId: user.id, createdAt: new Date().toISOString(), isOwn: true },
+    ])
+
+    socketRef.current.emit('send-message', {
       consultationId: consultationId.current,
       senderId: user.id,
       recipientId: consultantId,
       content: input.trim(),
-    }
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        content: input.trim(),
-        senderId: user.id,
-        createdAt: new Date().toISOString(),
-        isOwn: true,
-      },
-    ])
-
-    socketRef.current.emit('send-message', msgData)
-    socketRef.current.emit('stop-typing', {
-      consultationId: consultationId.current,
-      userId: user.id,
     })
+    socketRef.current.emit('stop-typing', { consultationId: consultationId.current, userId: user.id })
     setInput('')
   }
 
   const handleTyping = (value: string) => {
     setInput(value)
     if (!socketRef.current || !user) return
-
-    socketRef.current.emit('typing', {
-      consultationId: consultationId.current,
-      userId: user.id,
-    })
-
+    socketRef.current.emit('typing', { consultationId: consultationId.current, userId: user.id })
     if (typingTimeout.current) clearTimeout(typingTimeout.current)
     typingTimeout.current = setTimeout(() => {
-      socketRef.current?.emit('stop-typing', {
-        consultationId: consultationId.current,
-        userId: user.id,
-      })
+      socketRef.current?.emit('stop-typing', { consultationId: consultationId.current, userId: user.id })
     }, 1500)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
   }
 
-  const formatTime = (iso: string) => {
-    return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-  }
+  const formatTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
   if (loading) {
     return (
@@ -192,9 +169,7 @@ export default function ChatPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
       <nav className="bg-slate-900/80 backdrop-blur-md border-b border-purple-500/20 px-4 py-3 flex items-center space-x-4">
-        <Link href="/dashboard" className="text-purple-300 hover:text-white transition">
-          ← Voltar
-        </Link>
+        <Link href="/dashboard" className="text-purple-300 hover:text-white transition">← Voltar</Link>
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center">
             <span className="text-lg">🔮</span>
@@ -214,40 +189,29 @@ export default function ChatPage() {
         {messages.length === 0 && (
           <div className="text-center py-12">
             <span className="text-5xl">🔮</span>
-            <p className="text-purple-200 mt-4">Inicie a conversa com {consultant?.name}</p>
+            <p className="text-purple-200 mt-4">Consulta iniciada com {consultant?.name}</p>
             <p className="text-purple-400 text-sm mt-1">R$ {Number(consultant?.pricePerMinute || 0).toFixed(2)}/min</p>
           </div>
         )}
-
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.isOwn ? 'justify-end' : 'justify-start'}`}>
-            <div
-              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                msg.isOwn
-                  ? 'bg-purple-600 text-white rounded-br-sm'
-                  : 'bg-slate-700 text-purple-100 rounded-bl-sm'
-              }`}
-            >
+            <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${msg.isOwn ? 'bg-purple-600 text-white rounded-br-sm' : 'bg-slate-700 text-purple-100 rounded-bl-sm'}`}>
               <p className="text-sm">{msg.content}</p>
-              <p className={`text-xs mt-1 ${msg.isOwn ? 'text-purple-300' : 'text-slate-400'}`}>
-                {formatTime(msg.createdAt)}
-              </p>
+              <p className={`text-xs mt-1 ${msg.isOwn ? 'text-purple-300' : 'text-slate-400'}`}>{formatTime(msg.createdAt)}</p>
             </div>
           </div>
         ))}
-
         {isTyping && (
           <div className="flex justify-start">
             <div className="bg-slate-700 px-4 py-2 rounded-2xl rounded-bl-sm">
               <div className="flex space-x-1">
-                <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                {[0, 150, 300].map((d) => (
+                  <span key={d} className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
+                ))}
               </div>
             </div>
           </div>
         )}
-
         <div ref={messagesEndRef} />
       </div>
 
