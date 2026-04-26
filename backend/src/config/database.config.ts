@@ -13,6 +13,6 @@ export const DatabaseConfig = (): TypeOrmModuleOptions => ({
   password: process.env.DB_PASSWORD || 'ametista123',
   database: process.env.DB_NAME || 'ametista_tarot',
   entities: [User, Consultant, Credit, Consultation, Message],
-  synchronize: process.env.NODE_ENV !== 'production',
+  synchronize: true, // Temporariamente true para criar as tabelas no deploy
   logging: process.env.NODE_ENV === 'development',
 });
