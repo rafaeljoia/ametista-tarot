@@ -10,8 +10,6 @@ services:
       POSTGRES_DB: ametista_tarot
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - dokploy-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ametista"]
       interval: 10s
@@ -23,8 +21,6 @@ services:
     container_name: ametista_redis
     volumes:
       - redis_data:/data
-    networks:
-      - dokploy-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -51,15 +47,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    networks:
-      - dokploy-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.ametista-api.rule=Host(`ametista.braviaglobal.com.br`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.ametista-api.entrypoints=websecure"
-      - "traefik.http.routers.ametista-api.tls.certresolver=letsencrypt"
-      - "traefik.http.services.ametista-api.loadbalancer.server.port=3001"
-      - "traefik.docker.network=dokploy-network"
 
   frontend:
     build:
@@ -70,20 +57,7 @@ services:
       NEXT_PUBLIC_API_URL: https://ametista.braviaglobal.com.br/api
     depends_on:
       - backend
-    networks:
-      - dokploy-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.ametista.rule=Host(`ametista.braviaglobal.com.br`)"
-      - "traefik.http.routers.ametista.entrypoints=websecure"
-      - "traefik.http.routers.ametista.tls.certresolver=letsencrypt"
-      - "traefik.http.services.ametista.loadbalancer.server.port=3000"
-      - "traefik.docker.network=dokploy-network"
 
 volumes:
   postgres_data:
   redis_data:
-
-networks:
-  dokploy-network:
-    external: true
