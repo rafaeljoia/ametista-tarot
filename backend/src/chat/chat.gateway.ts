@@ -138,7 +138,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       data.recipientId,
       data.content,
     );
-    this.server.to(data.consultationId).emit('message', message);
+    client.to(data.consultationId).emit('message', message);
+    client.emit('message-sent', { id: message.id, tempId: data.content });
   }
 
   @SubscribeMessage('typing')
