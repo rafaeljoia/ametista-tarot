@@ -74,6 +74,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://ametista.braviaglobal.com.br/api
     container_name: ametista_frontend
     restart: always
     environment:
