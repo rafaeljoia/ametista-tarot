@@ -1,0 +1,56 @@
+{
+  "version": "1.0",
+  "services": {
+    "postgres": {
+      "image": "postgres:15-alpine",
+      "environment": {
+        "POSTGRES_USER": "ametista",
+        "POSTGRES_PASSWORD": "ametista123",
+        "POSTGRES_DB": "ametista_tarot"
+      },
+      "volumes": {
+        "postgres_data": "/var/lib/postgresql/data"
+      },
+      "ports": {
+        "5432": "5432"
+      }
+    },
+    "redis": {
+      "image": "redis:7-alpine",
+      "volumes": {
+        "redis_data": "/data"
+      },
+      "ports": {
+        "6379": "6379"
+      }
+    },
+    "backend": {
+      "build": "./backend",
+      "environment": {
+        "DB_HOST": "postgres",
+        "DB_PORT": "5432",
+        "DB_USERNAME": "ametista",
+        "DB_PASSWORD": "ametista123",
+        "DB_NAME": "ametista_tarot",
+        "JWT_SECRET": "change-this-in-production",
+        "NODE_ENV": "production",
+        "PORT": "3001",
+        "FRONTEND_URL": "https://your-domain.com"
+      },
+      "ports": {
+        "3001": "3001"
+      },
+      "depends_on": ["postgres", "redis"]
+    },
+    "frontend": {
+      "build": "./frontend",
+      "environment": {
+        "NEXT_PUBLIC_API_URL": "https://api.your-domain.com"
+      },
+      "ports": {
+        "3000": "3000"
+      },
+      "depends_on": ["backend"]
+    }
+  }
+}

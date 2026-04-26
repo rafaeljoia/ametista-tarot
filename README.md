@@ -1,0 +1,213 @@
+# Ametista Tarot - Plataforma de Atendimento Online de Cartomancia
+
+Plataforma completa para atendimento online de cartomancia, tarot, astrologia e práticas espirituais. Desenvolvida com Next.js, NestJS, PostgreSQL e Docker.
+
+## Características
+
+- **Autenticação Segura**: Registro e login com JWT
+- **Perfis de Consultores**: Listagem com especialidades, avaliações e disponibilidade
+- **Sistema de Créditos**: Compra de créditos para minutos de consulta
+- **Chat em Tempo Real**: Comunicação via WebSocket entre clientes e consultores
+- **Integração de Pagamentos**: Suporte para múltiplos gateways (Mercado Pago, Stripe, etc.)
+- **Dashboards**: Interfaces para clientes e consultores
+- **Responsive Design**: Interface moderna com Tailwind CSS
+
+## Stack Tecnológico
+
+### Frontend
+- Next.js 14
+- React 18
+- TypeScript
+- Tailwind CSS
+- Axios
+- Socket.io Client
+
+### Backend
+- NestJS 10
+- TypeScript
+- PostgreSQL
+- TypeORM
+- JWT Authentication
+- Socket.io (WebSockets)
+
+### Infraestrutura
+- Docker & Docker Compose
+- PostgreSQL 15
+- Redis 7
+
+## Pré-requisitos
+
+- Docker e Docker Compose instalados
+- Node.js 18+ (para desenvolvimento local)
+- npm ou yarn
+
+## Instalação e Execução
+
+### Com Docker Compose (Recomendado)
+
+1. Clone o repositório:
+```bash
+git clone https://github.com/rafaeljoia/ametista-tarot.git
+cd ametista-tarot
+```
+
+2. Copie os arquivos de ambiente:
+```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
+```
+
+3. Inicie os serviços:
+```bash
+docker-compose up -d
+```
+
+4. Acesse a aplicação:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
+- PostgreSQL: localhost:5432
+- Redis: localhost:6379
+
+### Desenvolvimento Local
+
+#### Backend
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+O backend rodará em `http://localhost:3001`
+
+#### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+O frontend rodará em `http://localhost:3000`
+
+## Variáveis de Ambiente
+
+### Backend (.env)
+
+```env
+DB_HOST=postgres
+DB_PORT=5432
+DB_USERNAME=ametista
+DB_PASSWORD=ametista123
+DB_NAME=ametista_tarot
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+NODE_ENV=development
+PORT=3001
+FRONTEND_URL=http://localhost:3000
+```
+
+### Frontend (.env.local)
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
+
+## Estrutura do Projeto
+
+```
+ametista-tarot/
+├── frontend/                 # Aplicação Next.js
+│   ├── app/
+│   │   ├── auth/            # Páginas de autenticação
+│   │   ├── dashboard/       # Dashboard do usuário
+│   │   ├── chat/            # Interface de chat
+│   │   └── styles/          # Estilos globais
+│   ├── package.json
+│   └── Dockerfile
+├── backend/                  # Aplicação NestJS
+│   ├── src/
+│   │   ├── auth/            # Módulo de autenticação
+│   │   ├── consultants/     # Módulo de consultores
+│   │   ├── users/           # Módulo de usuários
+│   │   ├── payments/        # Módulo de pagamentos
+│   │   ├── chat/            # Módulo de chat
+│   │   ├── database/        # Entidades e configuração
+│   │   └── config/          # Configurações
+│   ├── package.json
+│   └── Dockerfile
+├── docker-compose.yml       # Orquestração de containers
+└── README.md
+```
+
+## API Endpoints
+
+### Autenticação
+- `POST /auth/register` - Registrar novo usuário
+- `POST /auth/login` - Fazer login
+
+### Consultores
+- `GET /consultants` - Listar todos os consultores
+- `GET /consultants/:id` - Obter detalhes de um consultor
+
+### Usuários
+- `GET /users/me` - Obter perfil do usuário autenticado
+- `GET /users/:id` - Obter dados do usuário
+- `POST /users/:id/credits/add` - Adicionar créditos
+- `GET /users/:id/credits/history` - Histórico de créditos
+
+### Pagamentos
+- `POST /payments/create-intent` - Criar intenção de pagamento
+- `POST /payments/confirm` - Confirmar pagamento
+- `POST /payments/cancel` - Cancelar pagamento
+
+### Chat (WebSocket)
+- `join-consultation` - Entrar em uma consulta
+- `send-message` - Enviar mensagem
+- `typing` - Indicar que está digitando
+- `stop-typing` - Parar de digitar
+
+## Deploy no Dokploy
+
+1. **Preparar a VPS**:
+   - Instale Docker e Docker Compose
+   - Clone o repositório
+
+2. **Configurar Variáveis de Ambiente**:
+   - Atualize os arquivos `.env` com valores de produção
+   - Altere o `JWT_SECRET` para um valor seguro
+
+3. **Iniciar com Docker Compose**:
+   ```bash
+   docker-compose -f docker-compose.yml up -d
+   ```
+
+4. **Configurar Reverse Proxy (Nginx)**:
+   - Configure um proxy reverso para rotear as requisições
+   - Configure SSL/TLS com Let's Encrypt
+
+5. **Monitoramento**:
+   - Use `docker-compose logs -f` para ver os logs
+   - Configure alertas para monitorar a saúde dos serviços
+
+## Próximos Passos (Roadmap)
+
+- [ ] Integração com Mercado Pago/Stripe
+- [ ] Suporte a vídeo chamadas (WebRTC)
+- [ ] Sistema de avaliações e comentários
+- [ ] Agendamento de consultas
+- [ ] Notificações por email/SMS
+- [ ] Painel administrativo
+- [ ] Relatórios e analytics
+- [ ] Suporte multi-idioma
+
+## Contribuindo
+
+Contribuições são bem-vindas! Por favor, abra uma issue ou pull request.
+
+## Licença
+
+Este projeto está licenciado sob a Licença MIT.
+
+## Suporte
+
+Para suporte, abra uma issue no repositório do GitHub ou entre em contato através do email de suporte.
