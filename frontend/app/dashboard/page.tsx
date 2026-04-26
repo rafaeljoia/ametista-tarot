@@ -133,7 +133,7 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-1">
                       <span className="text-yellow-400">⭐</span>
-                      <span className="text-purple-200">{consultant.rating.toFixed(1)}</span>
+                      <span className="text-purple-200">{Number(consultant.rating).toFixed(1)}</span>
                     </div>
                     <span className="text-sm text-purple-300">
                       {consultant.consultationsCount} consultas
@@ -142,7 +142,7 @@ export default function DashboardPage() {
 
                   <div className="mb-4 pb-4 border-b border-purple-500/20">
                     <p className="text-purple-200 text-sm">
-                      R$ {consultant.pricePerMinute.toFixed(2)}/min
+                      R$ {Number(consultant.pricePerMinute).toFixed(2)}/min
                     </p>
                   </div>
 
