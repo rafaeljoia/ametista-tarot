@@ -113,7 +113,20 @@ export default function ChatPage() {
           content: msg.content,
           senderId: msg.senderId,
           createdAt: msg.createdAt || new Date().toISOString(),
-          isOwn: msg.senderId === parsedUser.id,
+          isOwn: false,
+        },
+      ])
+    })
+
+    socket.on('message-sent', (msg: any) => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: msg.id,
+          content: msg.tempId,
+          senderId: parsedUser.id,
+          createdAt: new Date().toISOString(),
+          isOwn: true,
         },
       ])
     })
@@ -126,11 +139,6 @@ export default function ChatPage() {
 
   const handleSend = () => {
     if (!input.trim() || !socketRef.current || !user) return
-
-    setMessages((prev) => [
-      ...prev,
-      { content: input.trim(), senderId: user.id, createdAt: new Date().toISOString(), isOwn: true },
-    ])
 
     socketRef.current.emit('send-message', {
       consultationId: consultationId.current,
