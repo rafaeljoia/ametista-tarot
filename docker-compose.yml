@@ -8,12 +8,10 @@ services:
       POSTGRES_USER: ametista
       POSTGRES_PASSWORD: ametista123
       POSTGRES_DB: ametista_tarot
-    # ports:
-    #   - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - ametista_network
+      - dokploy-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ametista"]
       interval: 10s
@@ -23,12 +21,10 @@ services:
   redis:
     image: redis:7-alpine
     container_name: ametista_redis
-    # ports:
-    #   - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
-      - ametista_network
+      - dokploy-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -50,21 +46,20 @@ services:
       NODE_ENV: production
       PORT: 3001
       FRONTEND_URL: https://ametista.braviaglobal.com.br
-    ports:
-      - "3001:3001"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     networks:
-      - ametista_network
+      - dokploy-network
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.ametista-api.rule=Host(`ametista.braviaglobal.com.br`) && PathPrefix(`/api`)"
       - "traefik.http.routers.ametista-api.entrypoints=websecure"
       - "traefik.http.routers.ametista-api.tls.certresolver=letsencrypt"
       - "traefik.http.services.ametista-api.loadbalancer.server.port=3001"
+      - "traefik.docker.network=dokploy-network"
 
   frontend:
     build:
@@ -73,23 +68,22 @@ services:
     container_name: ametista_frontend
     environment:
       NEXT_PUBLIC_API_URL: https://ametista.braviaglobal.com.br/api
-    ports:
-      - "3002:3000"
     depends_on:
       - backend
     networks:
-      - ametista_network
+      - dokploy-network
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.ametista.rule=Host(`ametista.braviaglobal.com.br`)"
       - "traefik.http.routers.ametista.entrypoints=websecure"
       - "traefik.http.routers.ametista.tls.certresolver=letsencrypt"
       - "traefik.http.services.ametista.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
 
 volumes:
   postgres_data:
   redis_data:
 
 networks:
-  ametista_network:
-    driver: bridge
+  dokploy-network:
+    external: true
