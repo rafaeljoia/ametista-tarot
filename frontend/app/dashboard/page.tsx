@@ -66,11 +66,21 @@ export default function DashboardPage() {
 
   const connectPresence = (token: string) => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
-    const baseUrl = apiUrl.replace('/api', '')
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || apiUrl.replace(/\/api$/, '')
 
-    const socket = io(baseUrl, {
+    const socket = io(wsUrl, {
       auth: { token },
       transports: ['websocket', 'polling'],
+    })
+
+    socket.on('connect', () => {
+      socket.emit('get-online-consultants')
+    })
+
+    socket.on('online-consultants', ({ ids }: { ids: string[] }) => {
+      setConsultants((prev) =>
+        prev.map((c) => ({ ...c, isOnline: ids.includes(c.id) }))
+      )
     })
 
     socket.on('consultant-status', ({ consultantId, isOnline }: { consultantId: string; isOnline: boolean }) => {
