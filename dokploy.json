@@ -48,7 +48,7 @@
         "NEXT_PUBLIC_API_URL": "https://api.your-domain.com"
       },
       "ports": {
-        "3000": "3000"
+        "3002": "3000"
       },
       "depends_on": ["backend"]
     }
