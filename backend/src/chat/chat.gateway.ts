@@ -119,12 +119,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('join-consultation')
-  async handleJoinConsultation(
+  handleJoinConsultation(
     client: Socket,
     data: { userId: string; consultationId: string },
   ) {
     client.join(data.consultationId);
+    this.presenceService.setUserSocket(data.userId, client.id);
     client.emit('joined', { consultationId: data.consultationId });
+    console.log(`Socket ${client.id} (user ${data.userId}) entrou na sala ${data.consultationId}`);
   }
 
   @SubscribeMessage('send-message')
@@ -138,7 +140,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       data.recipientId,
       data.content,
     );
-    client.to(data.consultationId).emit('message', message);
+
+    const recipientSocketId = this.presenceService.getUserSocket(data.recipientId);
+    console.log(`Mensagem de ${data.senderId} para ${data.recipientId}, socket destinatário: ${recipientSocketId}`);
+
+    if (recipientSocketId) {
+      this.server.to(recipientSocketId).emit('message', message);
+    } else {
+      client.to(data.consultationId).emit('message', message);
+    }
+
     client.emit('message-sent', { id: message.id, tempId: data.content });
   }
 
