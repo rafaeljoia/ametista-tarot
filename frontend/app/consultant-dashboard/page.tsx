@@ -59,9 +59,9 @@ export default function ConsultantDashboardPage() {
     setConsultant(parsed)
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
-    const baseUrl = apiUrl.replace('/api', '')
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || apiUrl.replace(/\/api$/, '')
 
-    const socket = io(baseUrl, {
+    const socket = io(wsUrl, {
       auth: { token },
       transports: ['websocket', 'polling'],
     })
