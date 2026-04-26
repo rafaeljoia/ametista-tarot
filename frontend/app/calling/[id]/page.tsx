@@ -77,10 +77,11 @@ export default function CallingPage() {
   }
 
   const startCalling = (user: any, token: string) => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
-    const baseUrl = apiUrl.replace('/api', '')
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+    const baseUrl = apiUrl.replace(/\/api$/, '')
 
     const socket = io(baseUrl, {
+      path: '/api/socket.io',
       auth: { token },
       transports: ['websocket', 'polling'],
     })
