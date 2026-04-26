@@ -58,10 +58,11 @@ export default function ConsultantDashboardPage() {
     const parsed = JSON.parse(consultantData)
     setConsultant(parsed)
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || apiUrl.replace(/\/api$/, '')
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+    const baseUrl = apiUrl.replace(/\/api$/, '')
 
-    const socket = io(wsUrl, {
+    const socket = io(baseUrl, {
+      path: '/api/socket.io',
       auth: { token },
       transports: ['websocket', 'polling'],
     })
