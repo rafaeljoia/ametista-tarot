@@ -1,10 +1,20 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConsultantsService } from './consultants.service';
+import { PresenceService } from '../presence/presence.service';
 
 @Controller('consultants')
 export class ConsultantsController {
-  constructor(private consultantsService: ConsultantsService) {}
+  constructor(
+    private consultantsService: ConsultantsService,
+    private presenceService: PresenceService,
+  ) {}
+
+  @Get('online')
+  @UseGuards(AuthGuard('jwt'))
+  getOnlineConsultants() {
+    return { ids: this.presenceService.getOnlineConsultantIds() };
+  }
 
   @Get()
   @UseGuards(AuthGuard('jwt'))
