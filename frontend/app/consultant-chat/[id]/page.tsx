@@ -79,7 +79,20 @@ export default function ConsultantChatPage() {
           content: msg.content,
           senderId: msg.senderId,
           createdAt: msg.createdAt || new Date().toISOString(),
-          isOwn: msg.senderId === parsed.id,
+          isOwn: false,
+        },
+      ])
+    })
+
+    socket.on('message-sent', (msg: any) => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: msg.id,
+          content: msg.tempId,
+          senderId: parsed.id,
+          createdAt: new Date().toISOString(),
+          isOwn: true,
         },
       ])
     })
@@ -92,11 +105,6 @@ export default function ConsultantChatPage() {
 
   const handleSend = () => {
     if (!input.trim() || !socketRef.current || !consultant) return
-
-    setMessages((prev) => [
-      ...prev,
-      { content: input.trim(), senderId: consultant.id, createdAt: new Date().toISOString(), isOwn: true },
-    ])
 
     socketRef.current.emit('send-message', {
       consultationId,
