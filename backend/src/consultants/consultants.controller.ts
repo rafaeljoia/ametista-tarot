@@ -11,7 +11,6 @@ export class ConsultantsController {
   ) {}
 
   @Get('online')
-  @UseGuards(AuthGuard('jwt'))
   getOnlineConsultants() {
     return { ids: this.presenceService.getOnlineConsultantIds() };
   }
