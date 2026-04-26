@@ -67,6 +67,9 @@ services:
       - "traefik.http.routers.ametista-api.entrypoints=websecure"
       - "traefik.http.routers.ametista-api.tls=true"
       - "traefik.http.routers.ametista-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.ametista-api.priority=20"
+      - "traefik.http.routers.ametista-api.middlewares=ametista-stripprefix"
+      - "traefik.http.middlewares.ametista-stripprefix.stripprefix.prefixes=/api"
       - "traefik.http.services.ametista-api.loadbalancer.server.port=3001"
 
   frontend:
@@ -88,6 +91,7 @@ services:
       - "traefik.http.routers.ametista.entrypoints=websecure"
       - "traefik.http.routers.ametista.tls=true"
       - "traefik.http.routers.ametista.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.ametista.priority=10"
       - "traefik.http.services.ametista.loadbalancer.server.port=3000"
 
 volumes:
