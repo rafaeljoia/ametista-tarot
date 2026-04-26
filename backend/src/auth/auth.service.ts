@@ -21,57 +21,60 @@ export class AuthService {
   async register(registerDto: RegisterDto) {
     const { email, password, name, phone, birthDate } = registerDto;
 
-    const existingUser = await this.usersRepository.findOne({
-      where: { email },
-    });
-
-    if (existingUser) {
-      throw new ConflictException('E-mail já registrado');
-    }
+    const existingUser = await this.usersRepository.findOne({ where: { email } });
+    if (existingUser) throw new ConflictException('E-mail já registrado');
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const user = this.usersRepository.create({
-      email,
-      password: hashedPassword,
-      name,
-      phone,
+      email, password: hashedPassword, name, phone,
       birthDate: birthDate ? new Date(birthDate) : null,
       credits: 0,
     });
 
     await this.usersRepository.save(user);
-
     const { password: _, ...userWithoutPassword } = user;
 
     return {
       user: userWithoutPassword,
-      access_token: this.jwtService.sign({ sub: user.id, email: user.email }),
+      access_token: this.jwtService.sign({ sub: user.id, email: user.email, role: 'user' }),
     };
   }
 
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
-
-    const user = await this.usersRepository.findOne({
-      where: { email },
-    });
+    const user = await this.usersRepository.findOne({ where: { email } });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('E-mail ou senha inválidos');
     }
 
     const { password: _, ...userWithoutPassword } = user;
-
     return {
       user: userWithoutPassword,
-      access_token: this.jwtService.sign({ sub: user.id, email: user.email }),
+      access_token: this.jwtService.sign({ sub: user.id, email: user.email, role: 'user' }),
+    };
+  }
+
+  async loginConsultant(loginDto: LoginDto) {
+    const { email, password } = loginDto;
+    const consultant = await this.consultantsRepository.findOne({ where: { email } });
+
+    if (!consultant || !(await bcrypt.compare(password, consultant.password))) {
+      throw new UnauthorizedException('E-mail ou senha inválidos');
+    }
+
+    const { password: _, ...consultantWithoutPassword } = consultant;
+    return {
+      consultant: consultantWithoutPassword,
+      access_token: this.jwtService.sign({
+        sub: consultant.id,
+        email: consultant.email,
+        role: 'consultant',
+      }),
     };
   }
 
   async validateUser(userId: string) {
-    return this.usersRepository.findOne({
-      where: { id: userId },
-    });
+    return this.usersRepository.findOne({ where: { id: userId } });
   }
 }
