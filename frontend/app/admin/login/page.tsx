@@ -33,12 +33,17 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-mystic-gradient flex items-center justify-center px-4">
+    <main className="min-h-screen bg-ink-900 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="text-5xl mb-2">🔐</div>
-          <h1 className="font-display text-3xl text-white">Painel Administrativo</h1>
-          <p className="text-ink-200/80 mt-2">Acesso restrito</p>
+          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-mystic-200">
+            <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </div>
+          <h1 className="font-display text-2xl text-white tracking-tight">Painel administrativo</h1>
+          <p className="text-ink-300 mt-2 text-sm">Acesso restrito</p>
         </div>
 
         <Card variant="elevated" className="p-7">

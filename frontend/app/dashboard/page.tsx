@@ -184,14 +184,14 @@ export default function DashboardPage() {
   const onlineCount = consultants.filter((c) => c.isOnline).length
 
   return (
-    <main className="min-h-screen bg-mystic-gradient">
+    <main className="min-h-screen bg-ink-900">
       <Navbar variant="client" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="grid lg:grid-cols-3 gap-5 mb-10">
           <Card variant="elevated" className="lg:col-span-2 p-7">
-            <p className="text-ink-200/80 text-sm">Olá,</p>
-            <h1 className="font-display text-3xl text-white mt-1">{user?.name?.split(' ')[0]} 👋</h1>
+            <p className="text-ink-300 text-sm">Bem-vinda(o) de volta</p>
+            <h1 className="font-display text-3xl text-white mt-1 tracking-tight">Olá, {user?.name?.split(' ')[0]}</h1>
             <p className="text-ink-200/80 mt-2 max-w-xl">
               Escolha um(a) consultor(a) abaixo para iniciar sua consulta.
               {onlineCount > 0 && (
@@ -225,7 +225,11 @@ export default function DashboardPage() {
                 placeholder="Buscar por nome ou especialidade…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                icon={<span>🔍</span>}
+                icon={
+                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+                  </svg>
+                }
               />
             </div>
 
@@ -253,9 +257,8 @@ export default function DashboardPage() {
 
         {filtered.length === 0 ? (
           <Card className="p-14 text-center">
-            <div className="text-5xl mb-3">🔮</div>
             <p className="text-white font-medium">Nenhum consultor encontrado</p>
-            <p className="text-ink-200/70 text-sm mt-1">Tente ajustar os filtros ou buscar por outro termo.</p>
+            <p className="text-ink-300 text-sm mt-1">Tente ajustar os filtros ou buscar por outro termo.</p>
           </Card>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -322,7 +325,7 @@ function ConsultantCard({
   return (
     <Card hoverable className="p-6 flex flex-col">
       <div className="flex items-start gap-4">
-        <Avatar name={c.name} emoji="🔮" size="lg" online={c.isOnline} />
+        <Avatar name={c.name} size="lg" online={c.isOnline} />
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <h3 className="text-white font-semibold truncate">{c.name}</h3>
@@ -357,11 +360,11 @@ function ConsultantCard({
             variant="primary"
             size="sm"
           >
-            {hasCredits ? '📞 Chamar' : 'Comprar créditos'}
+            {hasCredits ? 'Iniciar chamada' : 'Comprar créditos'}
           </LinkButton>
         ) : alerted ? (
           <Button variant="ghost" size="sm" disabled>
-            ✓ Aviso ativo
+            Aviso ativo
           </Button>
         ) : (
           <Button

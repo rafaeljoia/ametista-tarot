@@ -313,10 +313,10 @@ export default function ConsultantChatPage() {
     new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
   return (
-    <main className="min-h-screen bg-mystic-gradient flex flex-col">
-      <nav className="bg-black/30 backdrop-blur-md border-b border-white/10 px-4 py-3">
+    <main className="min-h-screen bg-ink-900 flex flex-col">
+      <nav className="bg-ink-900/80 backdrop-blur-md border-b border-white/[0.06] px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
-          <Avatar name="Cliente" emoji="👤" size="md" />
+          <Avatar name="Cliente" size="md" />
           <div className="flex-1 min-w-0">
             <p className="text-white font-semibold truncate">Consulta em andamento</p>
             <p className="text-mystic-300 text-xs truncate">
@@ -350,8 +350,7 @@ export default function ConsultantChatPage() {
         <div className="max-w-3xl mx-auto space-y-3">
           {messages.length === 0 && (
             <div className="text-center py-12">
-              <span className="text-5xl">💬</span>
-              <p className="text-ink-100 mt-4 font-display text-lg">
+              <p className="text-ink-100 font-display text-lg">
                 Aguardando mensagem do cliente…
               </p>
             </div>

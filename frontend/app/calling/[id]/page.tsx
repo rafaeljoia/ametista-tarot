@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import axios from 'axios'
 import { io, Socket } from 'socket.io-client'
+import { Avatar } from '../../../components/ui/Avatar'
+import { Button, LinkButton } from '../../../components/ui/Button'
 
 interface Consultant {
   id: string
@@ -17,15 +19,19 @@ function playRing() {
     const ctx = new AudioContext()
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.frequency.value = 660
-    osc.type = 'sine'
+    osc.connect(gain); gain.connect(ctx.destination)
+    osc.frequency.value = 660; osc.type = 'sine'
     gain.gain.setValueAtTime(0.2, ctx.currentTime)
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6)
-    osc.start()
-    osc.stop(ctx.currentTime + 0.6)
+    osc.start(); osc.stop(ctx.currentTime + 0.6)
   } catch {}
+}
+
+const STATUS_RING: Record<string, string> = {
+  calling:  'border-mystic-500/40 animate-pulse-ring',
+  accepted: 'border-emerald-400/50',
+  declined: 'border-red-500/40',
+  failed:   'border-red-500/40',
 }
 
 export default function CallingPage() {
@@ -44,12 +50,7 @@ export default function CallingPage() {
   useEffect(() => {
     const token = localStorage.getItem('token')
     const userData = localStorage.getItem('user')
-
-    if (!token || !userData) {
-      router.push('/login')
-      return
-    }
-
+    if (!token || !userData) { router.push('/login'); return }
     const user = JSON.parse(userData)
 
     fetchConsultant(token)
@@ -70,7 +71,7 @@ export default function CallingPage() {
     try {
       const res = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/consultants/${consultantId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       )
       setConsultant(res.data)
     } catch {}
@@ -88,7 +89,6 @@ export default function CallingPage() {
 
     socket.on('connect', () => {
       socket.emit('register-user', { userId: user.id })
-
       setTimeout(() => {
         socket.emit('call-consultant', {
           consultantId,
@@ -96,20 +96,15 @@ export default function CallingPage() {
           clientName: user.name,
         })
       }, 300)
-
       playRing()
       ringInterval.current = setInterval(playRing, 4000)
     })
 
-    socket.on('calling', () => {
-      setCallStatus('calling')
-    })
-
+    socket.on('calling', () => setCallStatus('calling'))
     socket.on('call-failed', () => {
       setCallStatus('failed')
       if (ringInterval.current) clearInterval(ringInterval.current)
     })
-
     socket.on('call-accepted', (data: { consultationId: string; consultantId: string }) => {
       setCallStatus('accepted')
       if (ringInterval.current) clearInterval(ringInterval.current)
@@ -118,7 +113,6 @@ export default function CallingPage() {
         router.push(`/chat/${consultantId}?consultationId=${data.consultationId}`)
       }, 800)
     })
-
     socket.on('call-declined', () => {
       setCallStatus('declined')
       if (ringInterval.current) clearInterval(ringInterval.current)
@@ -136,66 +130,66 @@ export default function CallingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-      <div className="text-center px-6">
-        <div className={`w-32 h-32 mx-auto mb-8 rounded-full flex items-center justify-center
-          ${callStatus === 'calling' ? 'bg-purple-600/20 border-2 border-purple-500/50 animate-pulse' : ''}
-          ${callStatus === 'accepted' ? 'bg-green-600/20 border-2 border-green-500/50' : ''}
-          ${callStatus === 'declined' || callStatus === 'failed' ? 'bg-red-600/20 border-2 border-red-500/50' : ''}
-        `}>
-          <span className="text-6xl">
-            {callStatus === 'calling' && '📞'}
-            {callStatus === 'accepted' && '✅'}
-            {callStatus === 'declined' && '❌'}
-            {callStatus === 'failed' && '📵'}
-          </span>
+    <main className="min-h-screen bg-ink-900 flex items-center justify-center px-4">
+      <div className="text-center max-w-sm w-full">
+        <div
+          className={[
+            'w-32 h-32 mx-auto mb-8 rounded-full flex items-center justify-center border bg-ink-800/60',
+            STATUS_RING[callStatus],
+          ].join(' ')}
+        >
+          <Avatar name={consultant?.name || 'C'} size="2xl" />
         </div>
 
-        <h2 className="text-2xl font-bold text-white mb-2">
+        <h2 className="font-display text-2xl text-white tracking-tight">
           {consultant?.name || 'Consultor'}
         </h2>
-        <p className="text-purple-300 mb-6">{consultant?.specialty}</p>
+        {consultant?.specialty && (
+          <p className="text-ink-300 mt-1">{consultant.specialty}</p>
+        )}
 
         {callStatus === 'calling' && (
           <>
-            <p className="text-purple-200 text-lg mb-8">Chamando{dots}</p>
-            <button
-              onClick={handleCancel}
-              className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-full transition"
-            >
-              Cancelar
-            </button>
+            <p className="text-ink-200 text-base mt-6 mb-6">
+              Chamando<span className="tabular-nums">{dots}</span>
+            </p>
+            <Button onClick={handleCancel} variant="danger" size="lg" fullWidth>
+              Cancelar chamada
+            </Button>
           </>
         )}
 
         {callStatus === 'accepted' && (
-          <p className="text-green-400 text-lg font-semibold">Chamada aceita! Iniciando chat...</p>
+          <p className="text-emerald-300 text-base font-medium mt-6">
+            Chamada aceita. Iniciando chat…
+          </p>
         )}
 
         {callStatus === 'declined' && (
-          <div>
-            <p className="text-red-300 text-lg mb-6">O consultor não atendeu</p>
-            <Link
-              href="/dashboard"
-              className="px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full transition"
-            >
-              Voltar ao início
-            </Link>
+          <div className="mt-6">
+            <p className="text-ink-200 mb-6">O consultor não atendeu.</p>
+            <LinkButton href="/dashboard" variant="primary" size="lg" fullWidth>
+              Voltar ao painel
+            </LinkButton>
           </div>
         )}
 
         {callStatus === 'failed' && (
-          <div>
-            <p className="text-red-300 text-lg mb-2">Consultor está offline</p>
-            <p className="text-purple-400 text-sm mb-6">Tente outro consultor disponível</p>
-            <Link
-              href="/dashboard"
-              className="px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full transition"
-            >
-              Voltar ao início
-            </Link>
+          <div className="mt-6">
+            <p className="text-ink-200 mb-1">Consultor está offline.</p>
+            <p className="text-ink-400 text-sm mb-6">Tente outro consultor disponível.</p>
+            <LinkButton href="/dashboard" variant="primary" size="lg" fullWidth>
+              Voltar ao painel
+            </LinkButton>
           </div>
         )}
+
+        <Link
+          href="/dashboard"
+          className="inline-block mt-6 text-ink-400 hover:text-ink-200 text-sm"
+        >
+          ← Voltar
+        </Link>
       </div>
     </main>
   )

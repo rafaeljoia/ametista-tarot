@@ -66,13 +66,13 @@ export default function ConsultorPerfilPage() {
   if (loading || !consultant) return <PageLoader label="Carregando seu perfil…" />
 
   return (
-    <main className="min-h-screen bg-mystic-gradient">
+    <main className="min-h-screen bg-ink-900">
       <Navbar variant="consultant" />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <Card variant="elevated" className="p-7 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-            <Avatar name={consultant.name} emoji="🔮" size="2xl" />
+            <Avatar name={consultant.name} size="2xl" />
             <div className="flex-1 min-w-0">
               <h1 className="font-display text-3xl text-white truncate">{consultant.name}</h1>
               <p className="text-mystic-300 truncate">{consultant.specialty}</p>
@@ -202,8 +202,7 @@ function ConsultationsView({ items }: { items: ConsultationItem[] }) {
       </div>
 
       {items.length === 0 ? (
-        <div className="py-12 text-center text-ink-200/70">
-          <div className="text-4xl mb-2">🌙</div>
+        <div className="py-12 text-center text-ink-300">
           Você ainda não realizou nenhuma consulta.
         </div>
       ) : (

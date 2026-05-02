@@ -79,13 +79,21 @@ export default function ConsultaFinalizadaPage() {
   }
 
   return (
-    <main className="min-h-screen bg-mystic-gradient flex items-center justify-center px-4 py-10">
+    <main className="min-h-screen bg-ink-900 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-xl">
         <Card variant="elevated" className="p-8 text-center">
-          <div className="text-5xl mb-3">
-            {reason === 'out-of-credits' ? '⏳' : '🌙'}
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-mystic-500/15 border border-mystic-400/30 flex items-center justify-center text-mystic-200">
+            {reason === 'out-of-credits' ? (
+              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            )}
           </div>
-          <h1 className="font-display text-3xl text-white">Consulta finalizada</h1>
+          <h1 className="font-display text-3xl text-white tracking-tight">Consulta finalizada</h1>
           <p className="text-ink-200 mt-2">{REASON_LABEL[reason] || REASON_LABEL.ended}</p>
 
           {error && <p className="text-red-300 mt-4">{error}</p>}

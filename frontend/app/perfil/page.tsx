@@ -93,7 +93,7 @@ export default function PerfilPage() {
   if (loading || !user) return <PageLoader label="Carregando seu perfil…" />
 
   return (
-    <main className="min-h-screen bg-mystic-gradient">
+    <main className="min-h-screen bg-ink-900">
       <Navbar variant="client" />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -249,8 +249,7 @@ function ConsultationsView({ items }: { items: ConsultationItem[] }) {
       <p className="text-ink-200/80 text-sm mb-6">Histórico completo de atendimentos.</p>
 
       {items.length === 0 ? (
-        <div className="py-12 text-center text-ink-200/70">
-          <div className="text-4xl mb-2">🔮</div>
+        <div className="py-12 text-center text-ink-300">
           Você ainda não realizou nenhuma consulta.
         </div>
       ) : (
@@ -322,8 +321,7 @@ function TransactionsView({ items }: { items: TransactionItem[] }) {
       </div>
 
       {items.length === 0 ? (
-        <div className="py-12 text-center text-ink-200/70 mt-4">
-          <div className="text-4xl mb-2">💳</div>
+        <div className="py-12 text-center text-ink-300 mt-4">
           Você ainda não realizou nenhuma compra.
         </div>
       ) : (
@@ -375,8 +373,7 @@ function HistoryView({ history }: { history: CreditEntry[] }) {
       <p className="text-ink-200/80 text-sm mb-6">Suas compras e usos recentes.</p>
 
       {history.length === 0 ? (
-        <div className="py-12 text-center text-ink-200/70">
-          <div className="text-4xl mb-2">📭</div>
+        <div className="py-12 text-center text-ink-300">
           Nenhum movimento ainda.
         </div>
       ) : (

@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import axios from 'axios'
 import { Logo } from '../../components/Logo'
-import { Card } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
 import { Alert } from '../../components/ui/Alert'
 import { Badge } from '../../components/ui/Badge'
+
+const AUTH_PHOTO =
+  'https://images.unsplash.com/photo-1505330622279-bf7d7fc918f4?auto=format&fit=crop&w=1400&q=80'
 
 export default function ConsultantLoginPage() {
   const router = useRouter()
@@ -23,10 +25,7 @@ export default function ConsultantLoginPage() {
     setError('')
     setLoading(true)
     try {
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/consultant-login`, {
-        email,
-        password,
-      })
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/consultant-login`, { email, password })
       localStorage.setItem('consultant-token', res.data.access_token)
       localStorage.setItem('consultant', JSON.stringify(res.data.consultant))
       router.push('/consultant-dashboard')
@@ -38,57 +37,68 @@ export default function ConsultantLoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-mystic-gradient flex flex-col">
-      <div className="starfield" />
-      <div className="relative flex-1 flex items-center justify-center p-4 py-12">
-        <div className="w-full max-w-md">
-          <div className="flex justify-center mb-8">
-            <Logo size="lg" />
+    <main className="min-h-screen bg-ink-900 grid lg:grid-cols-2">
+      <div className="hidden lg:block relative">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={AUTH_PHOTO} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink-900 via-ink-900/40 to-ink-900/10" />
+        <div className="relative h-full flex flex-col justify-between p-10">
+          <Logo size="md" />
+          <div className="max-w-md">
+            <p className="text-gold-300 text-xs uppercase tracking-[0.18em] mb-3">Painel do consultor</p>
+            <h2 className="font-display text-3xl text-white leading-tight tracking-tight">
+              Receba chamadas e atenda seus clientes.
+            </h2>
+            <p className="text-ink-300 mt-3 text-sm leading-relaxed">
+              Acesso restrito para consultoras(es) cadastrados na plataforma.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-center p-6 sm:p-10">
+        <div className="w-full max-w-sm">
+          <div className="lg:hidden mb-8">
+            <Logo size="md" />
           </div>
 
-          <Card variant="gold" className="p-8">
-            <div className="flex justify-center mb-3">
-              <Badge variant="gold">Acesso restrito · Consultor(a)</Badge>
-            </div>
-            <h1 className="font-display text-2xl text-white text-center mb-1">Painel do consultor</h1>
-            <p className="text-ink-200/80 text-center mb-7 text-sm">
-              Entre para receber chamadas e atender seus clientes.
-            </p>
+          <Badge variant="gold" className="mb-3">Acesso restrito · Consultor(a)</Badge>
+          <h1 className="font-display text-2xl text-white tracking-tight mb-1">Entrar como consultor(a)</h1>
+          <p className="text-ink-300 text-sm mb-7">Acesse seu painel para receber clientes.</p>
 
-            {error && <Alert variant="error" className="mb-5">{error}</Alert>}
+          {error && <Alert variant="error" className="mb-5">{error}</Alert>}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                label="E-mail"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-                required
-                autoComplete="email"
-              />
-              <Input
-                label="Senha"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                autoComplete="current-password"
-              />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="E-mail"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="seu@email.com"
+              required
+              autoComplete="email"
+            />
+            <Input
+              label="Senha"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              autoComplete="current-password"
+            />
 
-              <Button type="submit" loading={loading} fullWidth size="lg" variant="gold">
-                {loading ? 'Entrando...' : 'Entrar como consultor(a)'}
-              </Button>
-            </form>
-          </Card>
+            <Button type="submit" loading={loading} fullWidth size="lg" variant="gold">
+              {loading ? 'Entrando…' : 'Entrar'}
+            </Button>
+          </form>
 
-          <p className="text-center mt-6 text-sm text-ink-300/70">
+          <div className="mt-8 pt-6 border-t border-white/[0.06] text-center text-sm text-ink-400">
             Sou cliente —{' '}
-            <Link href="/login" className="text-mystic-200 hover:text-white">
+            <Link href="/login" className="text-ink-200 hover:text-white">
               entrar como cliente
             </Link>
-          </p>
+          </div>
         </div>
       </div>
     </main>

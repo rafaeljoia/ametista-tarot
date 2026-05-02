@@ -226,7 +226,7 @@ export default function ComprarCreditosPage() {
   if (loading) return <PageLoader label="Carregando pacotes…" />
 
   return (
-    <main className="min-h-screen bg-mystic-gradient">
+    <main className="min-h-screen bg-ink-900">
       <Script src="https://sdk.mercadopago.com/js/v2" strategy="afterInteractive" />
       <Navbar variant="client" />
 
@@ -382,13 +382,22 @@ export default function ComprarCreditosPage() {
       >
         {pixStatus === 'approved' ? (
           <div className="text-center py-4">
-            <div className="text-5xl mb-3">✨</div>
+            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center text-emerald-300">
+              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            </div>
             <p className="text-white font-display text-xl">Créditos adicionados à sua conta.</p>
             <p className="text-ink-200 text-sm mt-2">Redirecionando para o painel…</p>
           </div>
         ) : pixStatus === 'rejected' || pixStatus === 'cancelled' ? (
           <div className="text-center py-4">
-            <div className="text-4xl mb-3">⚠️</div>
+            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-500/15 border border-red-400/30 flex items-center justify-center text-red-300">
+              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                <path d="M12 9v4" /><path d="M12 17h.01" />
+              </svg>
+            </div>
             <p className="text-white">Pagamento não concluído.</p>
             <p className="text-ink-200 text-sm mt-2">Você pode tentar novamente.</p>
           </div>
@@ -413,7 +422,7 @@ export default function ComprarCreditosPage() {
             </div>
             <div className="mt-3 flex items-center gap-2 flex-wrap">
               <Button size="sm" variant="gold" onClick={copyPix}>
-                {copied ? 'Copiado ✓' : 'Copiar código'}
+                {copied ? 'Copiado' : 'Copiar código'}
               </Button>
               <Badge variant="mystic">Aguardando pagamento…</Badge>
               {expiresLabel && (

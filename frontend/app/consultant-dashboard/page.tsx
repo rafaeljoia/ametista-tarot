@@ -145,15 +145,15 @@ export default function ConsultantDashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-mystic-gradient">
+    <main className="min-h-screen bg-ink-900">
       <Navbar variant="consultant" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Status header */}
         <div className="grid lg:grid-cols-3 gap-5 mb-8">
           <Card variant="elevated" className="lg:col-span-2 p-7">
-            <p className="text-ink-200/80 text-sm">Olá,</p>
-            <h1 className="font-display text-3xl text-white mt-1">{consultant?.name?.split(' ')[0]} 🔮</h1>
+            <p className="text-ink-300 text-sm">Painel do consultor</p>
+            <h1 className="font-display text-3xl text-white mt-1 tracking-tight">Olá, {consultant?.name?.split(' ')[0]}</h1>
             <p className="text-ink-200/80 mt-2">
               {status === 'in-call'
                 ? 'Você está em atendimento.'
@@ -203,8 +203,7 @@ export default function ConsultantDashboardPage() {
           </div>
 
           {!stats?.recentConsultations?.length ? (
-            <div className="py-10 text-center text-ink-200/70">
-              <div className="text-4xl mb-2">📭</div>
+            <div className="py-10 text-center text-ink-300">
               <p className="text-sm">Nenhuma consulta concluída ainda.</p>
             </div>
           ) : (
@@ -246,8 +245,10 @@ export default function ConsultantDashboardPage() {
 
       <Modal open={!!incomingCall} onClose={handleDecline} size="sm" hideClose>
         <div className="text-center">
-          <div className="w-24 h-24 mx-auto mb-5 rounded-full bg-gradient-to-br from-mystic-500/30 to-mystic-700/20 border border-mystic-400/40 flex items-center justify-center animate-pulse-ring">
-            <span className="text-4xl">📞</span>
+          <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-mystic-500/15 border border-mystic-400/40 flex items-center justify-center animate-pulse-ring text-mystic-200">
+            <svg viewBox="0 0 24 24" className="w-9 h-9" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z" />
+            </svg>
           </div>
           <h3 className="font-display text-2xl text-white mb-1">Chamada recebida</h3>
           <p className="text-ink-200 mb-6">
