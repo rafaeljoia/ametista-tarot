@@ -44,15 +44,30 @@ interface ConsultationItem {
   counterpartSpecialty?: string | null
 }
 
+interface TransactionItem {
+  id: string
+  packageId: string
+  gross: number
+  creditsAmount: number
+  method: 'pix' | 'card'
+  status: string
+  gatewayId?: string | null
+  createdAt: string
+  creditedAt?: string | null
+}
+
 const API = process.env.NEXT_PUBLIC_API_URL
+
+type Tab = 'profile' | 'security' | 'consultations' | 'history' | 'transactions'
 
 export default function PerfilPage() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [history, setHistory] = useState<CreditEntry[]>([])
   const [consultations, setConsultations] = useState<ConsultationItem[]>([])
+  const [transactions, setTransactions] = useState<TransactionItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'profile' | 'security' | 'consultations' | 'history'>('profile')
+  const [tab, setTab] = useState<Tab>('profile')
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -63,11 +78,13 @@ export default function PerfilPage() {
       axios.get(`${API}/users/me`, auth),
       axios.get(`${API}/users/me/credits/history`, auth).catch(() => ({ data: [] })),
       axios.get(`${API}/consultations`, auth).catch(() => ({ data: [] })),
+      axios.get(`${API}/payments/transactions`, auth).catch(() => ({ data: [] })),
     ])
-      .then(([uRes, hRes, cRes]) => {
+      .then(([uRes, hRes, cRes, tRes]) => {
         setUser(uRes.data)
         setHistory(hRes.data || [])
         setConsultations(cRes.data || [])
+        setTransactions(tRes.data || [])
       })
       .catch(() => router.push('/login'))
       .finally(() => setLoading(false))
@@ -102,12 +119,14 @@ export default function PerfilPage() {
           <TabBtn active={tab === 'profile'} onClick={() => setTab('profile')}>Dados pessoais</TabBtn>
           <TabBtn active={tab === 'security'} onClick={() => setTab('security')}>Segurança</TabBtn>
           <TabBtn active={tab === 'consultations'} onClick={() => setTab('consultations')}>Consultas</TabBtn>
+          <TabBtn active={tab === 'transactions'} onClick={() => setTab('transactions')}>Transações</TabBtn>
           <TabBtn active={tab === 'history'} onClick={() => setTab('history')}>Créditos</TabBtn>
         </div>
 
         {tab === 'profile' && <ProfileForm user={user} onUpdated={(u) => setUser(u)} />}
         {tab === 'security' && <SecurityForm />}
         {tab === 'consultations' && <ConsultationsView items={consultations} />}
+        {tab === 'transactions' && <TransactionsView items={transactions} />}
         {tab === 'history' && <HistoryView history={history} />}
       </div>
     </main>
@@ -273,6 +292,76 @@ function ConsultationsView({ items }: { items: ConsultationItem[] }) {
               </div>
             )
           })}
+        </div>
+      )}
+    </Card>
+  )
+}
+
+function TransactionsView({ items }: { items: TransactionItem[] }) {
+  const statusBadge = (s: string): 'success' | 'mystic' | 'neutral' | 'gold' => {
+    if (s === 'approved') return 'success'
+    if (s === 'pending') return 'mystic'
+    if (s === 'rejected' || s === 'cancelled') return 'neutral'
+    if (s === 'refunded') return 'gold'
+    return 'neutral'
+  }
+  const statusLabel = (s: string) =>
+    ({ approved: 'Aprovado', pending: 'Pendente', rejected: 'Recusado', cancelled: 'Cancelado', refunded: 'Estornado' } as any)[s] || s
+
+  return (
+    <Card className="p-7">
+      <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
+        <div>
+          <h2 className="font-display text-xl text-white">Transações</h2>
+          <p className="text-ink-200/80 text-sm">Pagamentos via PIX e cartão (Mercado Pago).</p>
+        </div>
+        <Link href="/comprar-creditos" className="text-gold-300 hover:text-white text-sm underline">
+          + Comprar créditos
+        </Link>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="py-12 text-center text-ink-200/70 mt-4">
+          <div className="text-4xl mb-2">💳</div>
+          Você ainda não realizou nenhuma compra.
+        </div>
+      ) : (
+        <div className="overflow-x-auto -mx-3 mt-5">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-ink-300/80 text-xs uppercase tracking-wider">
+                <th className="text-left py-2 px-3">Data</th>
+                <th className="text-left py-2 px-3">Forma</th>
+                <th className="text-right py-2 px-3">Valor</th>
+                <th className="text-right py-2 px-3">Créditos</th>
+                <th className="text-right py-2 px-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((t) => (
+                <tr key={t.id} className="border-t border-white/5">
+                  <td className="py-3 px-3 text-ink-100">
+                    {new Date(t.createdAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                  </td>
+                  <td className="py-3 px-3">
+                    <Badge variant={t.method === 'pix' ? 'mystic' : 'gold'}>
+                      {t.method === 'pix' ? 'PIX' : 'Cartão'}
+                    </Badge>
+                  </td>
+                  <td className="py-3 px-3 text-right text-ink-100 font-medium">
+                    R$ {Number(t.gross).toFixed(2)}
+                  </td>
+                  <td className="py-3 px-3 text-right text-emerald-300 font-medium">
+                    +{t.creditsAmount}
+                  </td>
+                  <td className="py-3 px-3 text-right">
+                    <Badge variant={statusBadge(t.status)}>{statusLabel(t.status)}</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </Card>

@@ -155,10 +155,50 @@ ametista-tarot/
 - `POST /users/:id/credits/add` - Adicionar créditos
 - `GET /users/:id/credits/history` - Histórico de créditos
 
-### Pagamentos
-- `POST /payments/create-intent` - Criar intenção de pagamento
-- `POST /payments/confirm` - Confirmar pagamento
-- `POST /payments/cancel` - Cancelar pagamento
+### Pagamentos (Mercado Pago — PIX e Cartão)
+- `GET  /payments/config` — Pacotes disponíveis e public key do MP
+- `GET  /payments/packages` — Lista de pacotes de créditos
+- `POST /payments/pix` — Gera cobrança PIX (auth) → retorna QR Code + copia-e-cola
+- `POST /payments/card` — Cobra cartão tokenizado pelo SDK do Mercado Pago (auth)
+- `GET  /payments/transactions` — Lista as transações do usuário (auth)
+- `GET  /payments/transactions/:id` — Detalhe da transação (usado no polling do PIX)
+- `POST /payments/webhook` — Webhook do Mercado Pago (assinatura HMAC validada)
+
+#### Configuração do Mercado Pago
+
+1. Crie uma aplicação em https://www.mercadopago.com.br/developers/panel/app
+2. Copie o **Access Token** e o **Public Key** (TEST em dev, APP_USR em produção)
+3. Em **Webhooks → Configurar notificações**, registre a URL pública
+   `https://SEU_DOMINIO/api/payments/webhook` para o evento `payment` e copie a
+   **chave secreta de assinatura**
+4. Defina as variáveis no `.env` do backend:
+   ```env
+   MP_ACCESS_TOKEN=APP_USR-...
+   MP_PUBLIC_KEY=APP_USR-...
+   MP_WEBHOOK_SECRET=...
+   ```
+5. (Opcional) Configure SMTP para enviar e-mails de confirmação automáticos:
+   ```env
+   SMTP_HOST=smtp.example.com
+   SMTP_PORT=587
+   SMTP_USER=...
+   SMTP_PASS=...
+   SMTP_FROM=Ametista Tarot <no-reply@seudominio.com>
+   ```
+   Sem SMTP, as confirmações são gravadas em log.
+
+#### Pacotes de créditos
+
+| ID        | Valor   | Créditos | Bônus |
+|-----------|---------|----------|-------|
+| pkg_20    | R$ 20   | 20       | —     |
+| pkg_50    | R$ 50   | 55       | +5    |
+| pkg_100   | R$ 100  | 115      | +15   |
+| pkg_200   | R$ 200  | 240      | +40   |
+
+Crédito é creditado **uma única vez** por transação (idempotência garantida via
+`creditedAt` + lock pessimista no banco) — webhooks duplicados do MP nunca
+causam crédito duplo.
 
 ### Chat (WebSocket)
 - `join-consultation` - Entrar em uma consulta

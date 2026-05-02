@@ -121,7 +121,7 @@ export function Navbar({ variant = 'public' }: NavbarProps) {
               </div>
 
               <Link
-                href="/buy-credits"
+                href="/comprar-creditos"
                 className="px-4 py-2 text-sm text-ink-900 bg-gold-gradient hover:brightness-110 rounded-xl font-semibold shadow-gold"
               >
                 + Créditos
@@ -146,7 +146,7 @@ export function Navbar({ variant = 'public' }: NavbarProps) {
                   <Link href="/perfil" className="block px-3 py-2 text-sm text-ink-100 hover:bg-white/5 rounded-lg">
                     Meu perfil
                   </Link>
-                  <Link href="/buy-credits" className="block px-3 py-2 text-sm text-ink-100 hover:bg-white/5 rounded-lg">
+                  <Link href="/comprar-creditos" className="block px-3 py-2 text-sm text-ink-100 hover:bg-white/5 rounded-lg">
                     Comprar créditos
                   </Link>
                   <button
@@ -244,7 +244,7 @@ export function Navbar({ variant = 'public' }: NavbarProps) {
               </div>
               <Link href="/dashboard" className="block px-3 py-2 rounded-lg hover:bg-white/5">Consultores</Link>
               <Link href="/perfil" className="block px-3 py-2 rounded-lg hover:bg-white/5">Meu perfil</Link>
-              <Link href="/buy-credits" className="block px-3 py-2 rounded-lg hover:bg-white/5 text-gold-300">Comprar créditos</Link>
+              <Link href="/comprar-creditos" className="block px-3 py-2 rounded-lg hover:bg-white/5 text-gold-300">Comprar créditos</Link>
               <button onClick={logoutClient} className="block w-full text-left px-3 py-2 rounded-lg text-red-300 hover:bg-red-500/10">
                 Sair
               </button>

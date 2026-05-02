@@ -5,6 +5,7 @@ import { Credit } from '../database/entities/credit.entity';
 import { Consultation } from '../database/entities/consultation.entity';
 import { Message } from '../database/entities/message.entity';
 import { ConsultantEarning } from '../database/entities/consultant-earning.entity';
+import { Transaction } from '../database/entities/transaction.entity';
 
 export const DatabaseConfig = (): TypeOrmModuleOptions => ({
   type: 'postgres',
@@ -13,7 +14,15 @@ export const DatabaseConfig = (): TypeOrmModuleOptions => ({
   username: process.env.DB_USERNAME || 'ametista',
   password: process.env.DB_PASSWORD || 'ametista123',
   database: process.env.DB_NAME || 'ametista_tarot',
-  entities: [User, Consultant, Credit, Consultation, Message, ConsultantEarning],
+  entities: [
+    User,
+    Consultant,
+    Credit,
+    Consultation,
+    Message,
+    ConsultantEarning,
+    Transaction,
+  ],
   synchronize: true, // Temporariamente true para criar as tabelas no deploy
   logging: process.env.NODE_ENV === 'development',
 });
