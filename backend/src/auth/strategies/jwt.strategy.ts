@@ -1,11 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { AuthService } from '../auth.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../../database/entities/user.entity';
+import { Consultant } from '../../database/entities/consultant.entity';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private authService: AuthService) {
+  constructor(
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
+    @InjectRepository(Consultant)
+    private consultantsRepository: Repository<Consultant>,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -14,6 +22,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    return this.authService.validateUser(payload.sub);
+    if (payload.role === 'consultant') {
+      const consultant = await this.consultantsRepository.findOne({
+        where: { id: payload.sub },
+      });
+      if (!consultant) return null;
+      const { password, ...rest } = consultant;
+      return { ...rest, role: 'consultant' };
+    }
+
+    const user = await this.usersRepository.findOne({
+      where: { id: payload.sub },
+    });
+    if (!user) return null;
+    const { password, ...rest } = user;
+    return { ...rest, role: 'user' };
   }
 }

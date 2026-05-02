@@ -1,6 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { User } from '../database/entities/user.entity';
 import { Credit } from '../database/entities/credit.entity';
 
@@ -22,14 +29,52 @@ export class UsersService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    return user;
+    const { password, ...rest } = user;
+    return rest;
+  }
+
+  async updateProfile(
+    id: string,
+    body: { name?: string; email?: string; phone?: string; birthDate?: string },
+  ) {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('Usuário não encontrado');
+
+    if (body.email && body.email !== user.email) {
+      const exists = await this.usersRepository.findOne({ where: { email: body.email } });
+      if (exists) throw new ConflictException('E-mail já está em uso');
+      user.email = body.email;
+    }
+    if (body.name !== undefined) user.name = body.name;
+    if (body.phone !== undefined) user.phone = body.phone;
+    if (body.birthDate !== undefined) {
+      user.birthDate = body.birthDate ? new Date(body.birthDate) : null;
+    }
+
+    await this.usersRepository.save(user);
+    const { password, ...rest } = user;
+    return rest;
+  }
+
+  async changePassword(id: string, currentPassword: string, newPassword: string) {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('Usuário não encontrado');
+
+    const ok = await bcrypt.compare(currentPassword, user.password);
+    if (!ok) throw new UnauthorizedException('Senha atual incorreta');
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await this.usersRepository.save(user);
+    return { ok: true };
   }
 
   async addCredits(userId: string, amount: number, pricePerCredit: number) {
-    const user = await this.findById(userId);
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Usuário não encontrado');
+
     const totalPrice = amount * pricePerCredit;
 
-    user.credits += amount;
+    user.credits = Number(user.credits) + Number(amount);
     await this.usersRepository.save(user);
 
     const credit = this.creditsRepository.create({
@@ -43,17 +88,19 @@ export class UsersService {
 
     await this.creditsRepository.save(credit);
 
-    return user;
+    const { password, ...rest } = user;
+    return rest;
   }
 
   async deductCredits(userId: string, amount: number) {
-    const user = await this.findById(userId);
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Usuário não encontrado');
 
-    if (user.credits < amount) {
-      throw new Error('Créditos insuficientes');
+    if (Number(user.credits) < Number(amount)) {
+      throw new BadRequestException('Créditos insuficientes');
     }
 
-    user.credits -= amount;
+    user.credits = Number(user.credits) - Number(amount);
     await this.usersRepository.save(user);
 
     const credit = this.creditsRepository.create({
@@ -67,7 +114,8 @@ export class UsersService {
 
     await this.creditsRepository.save(credit);
 
-    return user;
+    const { password, ...rest } = user;
+    return rest;
   }
 
   async getCreditHistory(userId: string) {

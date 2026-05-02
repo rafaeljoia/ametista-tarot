@@ -4,6 +4,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import axios from 'axios'
+import { Logo } from '../../components/Logo'
+import { Card } from '../../components/ui/Card'
+import { Input } from '../../components/ui/Input'
+import { Button } from '../../components/ui/Button'
+import { Alert } from '../../components/ui/Alert'
+import { Badge } from '../../components/ui/Badge'
 
 export default function ConsultantLoginPage() {
   const router = useRouter()
@@ -16,15 +22,13 @@ export default function ConsultantLoginPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
-
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/consultant-login`,
-        { email, password }
-      )
-
-      localStorage.setItem('consultant-token', response.data.access_token)
-      localStorage.setItem('consultant', JSON.stringify(response.data.consultant))
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/consultant-login`, {
+        email,
+        password,
+      })
+      localStorage.setItem('consultant-token', res.data.access_token)
+      localStorage.setItem('consultant', JSON.stringify(res.data.consultant))
       router.push('/consultant-dashboard')
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao fazer login')
@@ -34,63 +38,57 @@ export default function ConsultantLoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-      <div className="w-full max-w-md">
-        <div className="bg-slate-800/50 backdrop-blur-md border border-purple-500/20 rounded-lg p-8">
+    <main className="min-h-screen bg-mystic-gradient flex flex-col">
+      <div className="starfield" />
+      <div className="relative flex-1 flex items-center justify-center p-4 py-12">
+        <div className="w-full max-w-md">
           <div className="flex justify-center mb-8">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white text-2xl">🔮</span>
-            </div>
+            <Logo size="lg" />
           </div>
 
-          <h1 className="text-2xl font-bold text-white text-center mb-1">Área do Consultor</h1>
-          <p className="text-purple-200 text-center mb-8 text-sm">Acesse sua conta de consultor</p>
-
-          {error && (
-            <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6 text-sm">
-              {error}
+          <Card variant="gold" className="p-8">
+            <div className="flex justify-center mb-3">
+              <Badge variant="gold">Acesso restrito · Consultor(a)</Badge>
             </div>
-          )}
+            <h1 className="font-display text-2xl text-white text-center mb-1">Painel do consultor</h1>
+            <p className="text-ink-200/80 text-center mb-7 text-sm">
+              Entre para receber chamadas e atender seus clientes.
+            </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-purple-200 mb-2">E-mail</label>
-              <input
+            {error && <Alert variant="error" className="mb-5">{error}</Alert>}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                label="E-mail"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 bg-slate-700 border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
                 placeholder="seu@email.com"
                 required
+                autoComplete="email"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-purple-200 mb-2">Senha</label>
-              <input
+              <Input
+                label="Senha"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 bg-slate-700 border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
                 placeholder="••••••••"
                 required
+                autoComplete="current-password"
               />
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-bold rounded-lg transition disabled:opacity-50"
-            >
-              {loading ? 'Entrando...' : 'Entrar como Consultor'}
-            </button>
-          </form>
+              <Button type="submit" loading={loading} fullWidth size="lg" variant="gold">
+                {loading ? 'Entrando...' : 'Entrar como consultor(a)'}
+              </Button>
+            </form>
+          </Card>
 
-          <div className="mt-6 text-center">
-            <Link href="/login" className="text-purple-400 hover:text-purple-300 text-sm">
-              Sou cliente → Entrar aqui
+          <p className="text-center mt-6 text-sm text-ink-300/70">
+            Sou cliente —{' '}
+            <Link href="/login" className="text-mystic-200 hover:text-white">
+              entrar como cliente
             </Link>
-          </div>
+          </p>
         </div>
       </div>
     </main>

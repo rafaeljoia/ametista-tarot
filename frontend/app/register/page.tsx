@@ -4,6 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import axios from 'axios'
+import { Logo } from '../../components/Logo'
+import { Card } from '../../components/ui/Card'
+import { Input } from '../../components/ui/Input'
+import { Button } from '../../components/ui/Button'
+import { Alert } from '../../components/ui/Alert'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -19,37 +24,33 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    })
+    setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
+    if (formData.password.length < 6) {
+      setError('Senha deve ter ao menos 6 caracteres')
+      return
+    }
     if (formData.password !== formData.confirmPassword) {
       setError('As senhas não coincidem')
       return
     }
 
     setLoading(true)
-
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
-        {
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          phone: formData.phone,
-          birthDate: formData.birthDate,
-        }
-      )
-
-      localStorage.setItem('token', response.data.access_token)
-      localStorage.setItem('user', JSON.stringify(response.data.user))
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        birthDate: formData.birthDate,
+      })
+      localStorage.setItem('token', res.data.access_token)
+      localStorage.setItem('user', JSON.stringify(res.data.user))
       router.push('/dashboard')
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao registrar')
@@ -59,129 +60,92 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center py-12">
-      <div className="w-full max-w-md">
-        <div className="bg-slate-800/50 backdrop-blur-md border border-purple-500/20 rounded-lg p-8">
+    <main className="min-h-screen bg-mystic-gradient flex flex-col">
+      <div className="starfield" />
+      <div className="relative flex-1 flex items-center justify-center p-4 py-12">
+        <div className="w-full max-w-md">
           <div className="flex justify-center mb-8">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white text-2xl">✨</span>
-            </div>
+            <Logo size="lg" />
           </div>
 
-          <h1 className="text-2xl font-bold text-white text-center mb-2">Ametista Tarot</h1>
-          <p className="text-purple-200 text-center mb-8">Crie sua conta</p>
+          <Card variant="elevated" className="p-8">
+            <h1 className="font-display text-2xl text-white text-center mb-1">Crie sua conta</h1>
+            <p className="text-ink-200/80 text-center mb-7 text-sm">É grátis e leva menos de um minuto.</p>
 
-          {error && (
-            <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">
-              {error}
-            </div>
-          )}
+            {error && <Alert variant="error" className="mb-5">{error}</Alert>}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-purple-200 mb-2">
-                Nome Completo
-              </label>
-              <input
-                type="text"
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                label="Nome completo"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full px-4 py-2 bg-slate-700 border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
-                placeholder="Seu nome"
+                placeholder="Como prefere ser chamada(o)"
                 required
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-purple-200 mb-2">
-                E-mail
-              </label>
-              <input
+              <Input
+                label="E-mail"
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-2 bg-slate-700 border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
                 placeholder="seu@email.com"
                 required
+                autoComplete="email"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-purple-200 mb-2">
-                Telefone
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="w-full px-4 py-2 bg-slate-700 border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
-                placeholder="(11) 99999-9999"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-purple-200 mb-2">
-                Data de Nascimento
-              </label>
-              <input
-                type="date"
-                name="birthDate"
-                value={formData.birthDate}
-                onChange={handleChange}
-                className="w-full px-4 py-2 bg-slate-700 border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-purple-200 mb-2">
-                Senha
-              </label>
-              <input
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  label="Telefone"
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="(11) 99999-9999"
+                />
+                <Input
+                  label="Nascimento"
+                  type="date"
+                  name="birthDate"
+                  value={formData.birthDate}
+                  onChange={handleChange}
+                />
+              </div>
+              <Input
+                label="Senha"
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full px-4 py-2 bg-slate-700 border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
-                placeholder="••••••••"
+                placeholder="Mínimo 6 caracteres"
                 required
+                hint="Use ao menos 6 caracteres"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-purple-200 mb-2">
-                Confirmar Senha
-              </label>
-              <input
+              <Input
+                label="Confirmar senha"
                 type="password"
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="w-full px-4 py-2 bg-slate-700 border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
                 placeholder="••••••••"
                 required
               />
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-bold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Registrando...' : 'Registrar'}
-            </button>
-          </form>
+              <Button type="submit" loading={loading} fullWidth size="lg">
+                {loading ? 'Criando conta...' : 'Criar minha conta'}
+              </Button>
 
-          <div className="mt-6 text-center">
-            <p className="text-purple-200">
+              <p className="text-xs text-ink-300/70 text-center">
+                Ao continuar você concorda com nossos Termos e Política de Privacidade.
+              </p>
+            </form>
+
+            <p className="mt-6 text-center text-sm text-ink-200/80">
               Já tem conta?{' '}
-              <Link href="/login" className="text-purple-400 hover:text-purple-300 font-semibold">
-                Faça login aqui
+              <Link href="/login" className="text-mystic-200 hover:text-white font-semibold">
+                Entrar aqui
               </Link>
             </p>
-          </div>
+          </Card>
         </div>
       </div>
     </main>
