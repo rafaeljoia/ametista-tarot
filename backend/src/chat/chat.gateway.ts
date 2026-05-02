@@ -229,26 +229,51 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const type: IncomingMessageType = data.type === 'image' ? 'image' : 'text';
     const mediaUrl = type === 'image' ? (data.mediaUrl || '').trim() : null;
+    const tempId = (data as any).tempId as string | undefined;
 
     if (type === 'text' && !data.content?.trim()) return;
     if (type === 'image') {
       // Apenas aceita URLs servidas pela própria API (multer escreveu em /api/uploads/chat/...)
       if (!mediaUrl || !mediaUrl.startsWith('/api/uploads/chat/')) {
-        client.emit('send-error', { reason: 'invalid-media-url' });
+        client.emit('send-error', { tempId, reason: 'invalid-media-url' });
         return;
       }
     }
 
+    // Autorização: o remetente precisa ser participante da consulta. Sem isso,
+    // qualquer socket autenticado poderia escrever em qualquer consultationId
+    // (IDOR). Usuário deve ser cliente, consultor deve ser o consultor da consulta.
+    const consultation = await this.chatService.findConsultation(data.consultationId);
+    if (!consultation) {
+      client.emit('send-error', { tempId, reason: 'consultation-not-found' });
+      return;
+    }
+    const role = id?.role;
+    const isMember =
+      (role === 'user' && consultation.clientId === senderId) ||
+      (role === 'consultant' && consultation.consultantId === senderId);
+    if (!isMember) {
+      this.logger.warn(
+        `send-message rejeitado por authz: socket=${client.id} sender=${senderId} role=${role} consultation=${data.consultationId}`,
+      );
+      client.emit('send-error', { tempId, reason: 'forbidden' });
+      return;
+    }
+
+    // Recipiente correto é sempre a contraparte da consulta — nunca confiar no client.
+    const recipientId =
+      role === 'user' ? consultation.consultantId : consultation.clientId;
+
     const message = await this.chatService.saveMessage(
       data.consultationId,
       senderId,
-      data.recipientId,
+      recipientId,
       data.content || '',
       type,
       mediaUrl,
     );
 
-    const recipientSocketId = this.presenceService.getUserSocket(data.recipientId);
+    const recipientSocketId = this.presenceService.getUserSocket(recipientId);
 
     if (recipientSocketId) {
       this.server.to(recipientSocketId).emit('message', message);
@@ -256,7 +281,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.to(data.consultationId).emit('message', message);
     }
 
-    client.emit('message-sent', { id: message.id, tempId: data.content });
+    // Eco para o remetente reconciliar o id real com o tempId otimista.
+    client.emit('message-sent', {
+      id: message.id,
+      tempId,
+      createdAt: message.createdAt,
+    });
   }
 
   @SubscribeMessage('typing')

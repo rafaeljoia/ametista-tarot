@@ -104,6 +104,14 @@ export class ConsultantsController {
     return this.consultantsService.getStats(id);
   }
 
+  @Get('me/alerts')
+  @UseGuards(AuthGuard('jwt'))
+  async getMyAlerts(@Request() req) {
+    if (req.user.role !== 'user') throw new ForbiddenException();
+    const ids = await this.availabilityAlerts.getMyActiveAlerts(req.user.id);
+    return { consultantIds: ids };
+  }
+
   @Post(':id/notify-me')
   @UseGuards(AuthGuard('jwt'))
   async requestNotifyMe(@Param('id') id: string, @Request() req) {

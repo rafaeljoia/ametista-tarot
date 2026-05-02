@@ -88,13 +88,13 @@ export default function DashboardPage() {
 
   const fetchActiveAlerts = async (token: string) => {
     try {
-      // Endpoint enxuto: poderíamos chamar GET por consultor; aqui aproveitamos
-      // o status individual lazy via toggle. Mantemos um set local que cresce
-      // conforme o usuário ativa alertas.
-      // (Sem chamada inicial para evitar N requests; o estado começa vazio.)
-      void token
+      const r = await axios.get(`${API}/consultants/me/alerts`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const ids: string[] = r.data?.consultantIds || []
+      setAlertedIds(new Set(ids))
     } catch {
-      // ignore
+      // silencia: a UI ainda funciona via estado local conforme o usuário interage.
     }
   }
 

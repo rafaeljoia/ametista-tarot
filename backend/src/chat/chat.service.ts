@@ -13,6 +13,10 @@ export class ChatService {
     private consultationsRepository: Repository<Consultation>,
   ) {}
 
+  async findConsultation(id: string) {
+    return this.consultationsRepository.findOne({ where: { id } });
+  }
+
   async saveMessage(
     consultationId: string,
     senderId: string,

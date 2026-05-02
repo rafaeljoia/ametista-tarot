@@ -154,6 +154,17 @@ export default function ConsultantChatPage() {
       ])
     })
 
+    socket.on('message-sent', (ack: { id?: string; tempId?: string; createdAt?: string }) => {
+      if (!ack?.tempId) return
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === ack.tempId
+            ? { ...m, id: ack.id || m.id, createdAt: ack.createdAt || m.createdAt }
+            : m,
+        ),
+      )
+    })
+
     socket.on('user-typing', () => triggerPeerTyping())
     socket.on('user-stop-typing', () => {
       if (peerTypingTimeout.current) clearTimeout(peerTypingTimeout.current)
@@ -166,6 +177,9 @@ export default function ConsultantChatPage() {
 
     socket.on('send-error', (data: any) => {
       setUploadError(`Falha ao enviar: ${data?.reason || 'erro desconhecido'}`)
+      if (data?.tempId) {
+        setMessages((prev) => prev.filter((m) => m.id !== data.tempId))
+      }
     })
 
     socket.on('consultation-ended', (data: any) => {
@@ -182,18 +196,24 @@ export default function ConsultantChatPage() {
     setMessages((prev) => [...prev, { ...msg, isOwn: true }])
   }
 
+  const newTempId = () =>
+    `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
   const handleSend = () => {
     if (!input.trim() || !socketRef.current || !consultant) return
     const content = input.trim()
+    const tempId = newTempId()
     socketRef.current.emit('send-message', {
       consultationId,
       senderId: consultant.id,
       recipientId: clientId,
       content,
       type: 'text',
+      tempId,
     })
     socketRef.current.emit('stop-typing', { consultationId, userId: consultant.id })
     pushOwnMessage({
+      id: tempId,
       content,
       senderId: consultant.id,
       createdAt: new Date().toISOString(),
@@ -227,6 +247,7 @@ export default function ConsultantChatPage() {
       const url = r.data?.url as string
       if (!url) throw new Error('URL ausente')
 
+      const tempId = newTempId()
       socketRef.current.emit('send-message', {
         consultationId,
         senderId: consultant.id,
@@ -234,8 +255,10 @@ export default function ConsultantChatPage() {
         content: '',
         type: 'image',
         mediaUrl: url,
+        tempId,
       })
       pushOwnMessage({
+        id: tempId,
         content: '',
         senderId: consultant.id,
         createdAt: new Date().toISOString(),
