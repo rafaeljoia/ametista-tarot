@@ -54,6 +54,15 @@ export default function DashboardPage() {
     if (!token) { router.push('/login'); return }
     if (userData) setUser(JSON.parse(userData))
 
+    // Always revalidate user (credits, name, etc.) from the server.
+    axios
+      .get(`${API}/users/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => {
+        setUser(r.data)
+        localStorage.setItem('user', JSON.stringify(r.data))
+      })
+      .catch(() => {})
+
     fetchConsultants(token)
     fetchActiveAlerts(token)
     connectPresence(token)
