@@ -7,10 +7,11 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { User } from '../database/entities/user.entity';
 import { Consultant } from '../database/entities/consultant.entity';
+import { Admin } from '../database/entities/admin.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Consultant]),
+    TypeOrmModule.forFeature([User, Consultant, Admin]),
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your-secret-key',

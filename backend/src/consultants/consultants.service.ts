@@ -36,6 +36,51 @@ export class ConsultantsService {
     });
   }
 
+  // Cache simples em memória do Top 10. Refresh em background a cada TTL.
+  private topCache: { data: any[]; expiresAt: number } | null = null;
+  private readonly TOP_TTL_MS = 5 * 60 * 1000;
+
+  async getTopConsultants(limit = 10) {
+    const now = Date.now();
+    if (this.topCache && this.topCache.expiresAt > now) {
+      return this.topCache.data.slice(0, limit);
+    }
+    const list = await this.consultantsRepository.find({
+      where: { isActive: true },
+      select: [
+        'id',
+        'name',
+        'specialty',
+        'bio',
+        'rating',
+        'pricePerMinute',
+        'isAvailable',
+        'consultationsCount',
+      ],
+    });
+    // Score = rating × log10(consultationsCount + 1) — pondera reputação
+    // pela quantidade de avaliações para evitar consultor novo com 1 review
+    // 5★ dominar o ranking.
+    const scored = list
+      .map((c) => ({
+        ...c,
+        rating: Number(c.rating || 0),
+        pricePerMinute: Number(c.pricePerMinute || 0),
+        score:
+          Number(c.rating || 0) *
+          Math.log10((c.consultationsCount || 0) + 1 + 1),
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20);
+
+    this.topCache = { data: scored, expiresAt: now + this.TOP_TTL_MS };
+    return scored.slice(0, limit);
+  }
+
+  invalidateTopCache() {
+    this.topCache = null;
+  }
+
   async findById(id: string) {
     const consultant = await this.consultantsRepository.findOne({ where: { id } });
     if (!consultant) throw new NotFoundException('Consultor não encontrado');

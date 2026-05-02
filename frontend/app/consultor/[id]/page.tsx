@@ -29,6 +29,14 @@ interface Stats {
   rating: number
 }
 
+interface Review {
+  id: string
+  rating: number
+  comment: string | null
+  createdAt: string
+  clientFirstName: string
+}
+
 export default function ConsultantProfilePage() {
   const router = useRouter()
   const params = useParams()
@@ -36,6 +44,7 @@ export default function ConsultantProfilePage() {
 
   const [consultant, setConsultant] = useState<Consultant | null>(null)
   const [stats, setStats] = useState<Stats | null>(null)
+  const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -51,10 +60,14 @@ export default function ConsultantProfilePage() {
       axios
         .get(`${process.env.NEXT_PUBLIC_API_URL}/consultants/${consultantId}/stats`)
         .catch(() => null),
+      axios
+        .get(`${process.env.NEXT_PUBLIC_API_URL}/consultants/${consultantId}/reviews?limit=10`)
+        .catch(() => ({ data: [] })),
     ])
-      .then(([cRes, sRes]) => {
+      .then(([cRes, sRes, rRes]) => {
         setConsultant(cRes.data)
         if (sRes) setStats(sRes.data)
+        setReviews(rRes.data || [])
       })
       .catch(() => setError('Consultor não encontrado'))
       .finally(() => setLoading(false))
@@ -135,6 +148,45 @@ export default function ConsultantProfilePage() {
               <div className="mt-8">
                 <h2 className="text-white font-semibold mb-2">Sobre mim</h2>
                 <p className="text-ink-100/90 leading-relaxed whitespace-pre-line">{consultant.bio}</p>
+              </div>
+            )}
+
+            {/* Reviews */}
+            {reviews.length > 0 && (
+              <div className="mt-8">
+                <h2 className="text-white font-semibold mb-3">
+                  Avaliações de clientes ({reviews.length})
+                </h2>
+                <div className="space-y-3">
+                  {reviews.map((r) => (
+                    <div
+                      key={r.id}
+                      className="rounded-xl bg-white/5 border border-white/10 px-4 py-3"
+                    >
+                      <div className="flex items-center justify-between gap-3 mb-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-gold-300 font-semibold text-sm">
+                            {'★'.repeat(r.rating)}
+                            <span className="text-ink-400/50">
+                              {'★'.repeat(5 - r.rating)}
+                            </span>
+                          </span>
+                          <span className="text-white text-sm truncate">
+                            {r.clientFirstName}
+                          </span>
+                        </div>
+                        <span className="text-ink-300 text-xs whitespace-nowrap">
+                          {new Date(r.createdAt).toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
+                      {r.comment && (
+                        <p className="text-ink-100/90 text-sm leading-relaxed">
+                          {r.comment}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

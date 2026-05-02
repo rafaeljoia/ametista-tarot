@@ -7,6 +7,9 @@ import { Message } from '../database/entities/message.entity';
 import { ConsultantEarning } from '../database/entities/consultant-earning.entity';
 import { Transaction } from '../database/entities/transaction.entity';
 import { ConsultantAvailabilityAlert } from '../database/entities/consultant-availability-alert.entity';
+import { Review } from '../database/entities/review.entity';
+import { Admin } from '../database/entities/admin.entity';
+import { CommissionPayout } from '../database/entities/commission-payout.entity';
 
 export const DatabaseConfig = (): TypeOrmModuleOptions => ({
   type: 'postgres',
@@ -24,7 +27,10 @@ export const DatabaseConfig = (): TypeOrmModuleOptions => ({
     ConsultantEarning,
     Transaction,
     ConsultantAvailabilityAlert,
+    Review,
+    Admin,
+    CommissionPayout,
   ],
-  synchronize: true, // Temporariamente true para criar as tabelas no deploy
+  synchronize: true,
   logging: process.env.NODE_ENV === 'development',
 });

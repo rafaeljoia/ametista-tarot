@@ -44,6 +44,22 @@ export class ConsultantsController {
     return { ids: this.presenceService.getOnlineConsultantIds() };
   }
 
+  // Ranking público — usado pela landing.
+  @Get('top')
+  async top() {
+    const onlineIds = this.presenceService.getOnlineConsultantIds();
+    const list = await this.consultantsService.getTopConsultants(10);
+    return list.map((c) => ({
+      id: c.id,
+      name: c.name,
+      specialty: c.specialty,
+      rating: Number(c.rating),
+      pricePerMinute: Number(c.pricePerMinute),
+      consultationsCount: c.consultationsCount,
+      isOnline: onlineIds.includes(c.id),
+    }));
+  }
+
   @Get()
   async findAll() {
     const onlineIds = this.presenceService.getOnlineConsultantIds();

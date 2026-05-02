@@ -22,12 +22,17 @@ interface Consultant {
 
 export default function Home() {
   const [consultants, setConsultants] = useState<Consultant[]>([])
+  const [topConsultants, setTopConsultants] = useState<Consultant[]>([])
 
   useEffect(() => {
     axios
       .get(`${process.env.NEXT_PUBLIC_API_URL}/consultants`)
       .then((r) => setConsultants((r.data || []).slice(0, 6)))
       .catch(() => setConsultants([]))
+    axios
+      .get(`${process.env.NEXT_PUBLIC_API_URL}/consultants/top`)
+      .then((r) => setTopConsultants(r.data || []))
+      .catch(() => setTopConsultants([]))
   }, [])
 
   return (
@@ -162,6 +167,69 @@ export default function Home() {
           </div>
         )}
       </section>
+
+      {/* Top 10 Ranking */}
+      {topConsultants.length > 0 && (
+        <section id="ranking" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center mb-10">
+            <Badge variant="gold" className="mb-3">🏆 Top 10</Badge>
+            <h2 className="font-display text-3xl md:text-4xl text-white">
+              Os mais bem avaliados
+            </h2>
+            <p className="text-ink-200/80 mt-2">
+              Ranking dos nossos consultores favoritos pelos clientes.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-2 gap-4">
+            {topConsultants.map((c, idx) => (
+              <Link
+                key={c.id}
+                href={`/consultor/${c.id}`}
+                className="block group"
+              >
+                <Card hoverable className="p-5 flex items-center gap-4">
+                  <div
+                    className={[
+                      'shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center font-display text-xl',
+                      idx === 0
+                        ? 'bg-gold-gradient text-ink-900 shadow-gold'
+                        : idx < 3
+                        ? 'bg-gradient-to-br from-gold-400/40 to-gold-600/40 text-gold-100'
+                        : 'bg-white/5 text-ink-200 border border-white/10',
+                    ].join(' ')}
+                  >
+                    {idx + 1}
+                  </div>
+                  <Avatar name={c.name} emoji="🔮" size="md" online={c.isOnline} />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-white font-semibold truncate group-hover:text-mystic-200 transition">
+                      {c.name}
+                    </h3>
+                    <p className="text-mystic-300 text-xs truncate">
+                      {c.specialty}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-gold-300 text-sm">
+                        ★ {Number(c.rating).toFixed(1)}
+                      </span>
+                      <span className="text-ink-300 text-xs">
+                        · {c.consultationsCount} consultas
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-gold-300 font-semibold text-sm">
+                      R$ {Number(c.pricePerMinute).toFixed(2)}
+                    </p>
+                    <p className="text-ink-300 text-xs">/min</p>
+                  </div>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Trust */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">

@@ -12,6 +12,8 @@ import { ConsultationsModule } from './consultations/consultations.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MailModule } from './mail/mail.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { AdminModule } from './admin/admin.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseConfig } from './config/database.config';
@@ -31,6 +33,8 @@ import { DatabaseConfig } from './config/database.config';
     ChatModule,
     ConsultationsModule,
     UploadsModule,
+    ReviewsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

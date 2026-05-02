@@ -8,6 +8,7 @@ import { Card } from '../../../../components/ui/Card'
 import { Button } from '../../../../components/ui/Button'
 import { Badge } from '../../../../components/ui/Badge'
 import { PageLoader } from '../../../../components/ui/Spinner'
+import { ReviewForm } from '../../../../components/ReviewForm'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
@@ -121,6 +122,15 @@ export default function ConsultaFinalizadaPage() {
                   <Badge variant="success">Finalizada</Badge>
                 </Stat>
               </div>
+
+              {role === 'user' && data.status === 'completed' && (
+                <div className="mt-8">
+                  <ReviewForm
+                    consultationId={data.id}
+                    consultantName={data.consultant?.name}
+                  />
+                </div>
+              )}
 
               <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
                 {role === 'user' && data.consultant && (
