@@ -49,7 +49,8 @@ export default function ConsultantChatPage() {
   const params = useParams()
   const searchParams = useSearchParams()
   const consultationId = params.id as string
-  const clientId = searchParams.get('clientId') || ''
+  const queryClientId = searchParams.get('clientId') || ''
+  const [resolvedClientId, setResolvedClientId] = useState<string>(queryClientId)
 
   const [consultant, setConsultant] = useState<Consultant | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -94,6 +95,13 @@ export default function ConsultantChatPage() {
         if (typeof r.data?.creditsUsed === 'number') {
           setEarned(Number(r.data.creditsUsed))
         }
+        const cid =
+          r.data?.userId ||
+          r.data?.clientId ||
+          r.data?.user?.id ||
+          r.data?.client?.id ||
+          ''
+        if (cid) setResolvedClientId(String(cid))
         if (r.data?.status === 'completed' && !endedRef.current) {
           endedRef.current = true
           router.replace(`/consulta/finalizada/${consultationId}?reason=ended&role=consultant`)
@@ -201,12 +209,16 @@ export default function ConsultantChatPage() {
 
   const handleSend = () => {
     if (!input.trim() || !socketRef.current || !consultant) return
+    if (!resolvedClientId) {
+      setUploadError('Não foi possível identificar o cliente desta consulta. Recarregue a página.')
+      return
+    }
     const content = input.trim()
     const tempId = newTempId()
     socketRef.current.emit('send-message', {
       consultationId,
       senderId: consultant.id,
-      recipientId: clientId,
+      recipientId: resolvedClientId,
       content,
       type: 'text',
       tempId,
@@ -225,6 +237,10 @@ export default function ConsultantChatPage() {
   const handleFile = async (file: File | undefined) => {
     setUploadError(null)
     if (!file || !socketRef.current || !consultant) return
+    if (!resolvedClientId) {
+      setUploadError('Não foi possível identificar o cliente desta consulta. Recarregue a página.')
+      return
+    }
     if (file.size > 5 * 1024 * 1024) {
       setUploadError('Imagem maior que 5MB.')
       return
@@ -251,7 +267,7 @@ export default function ConsultantChatPage() {
       socketRef.current.emit('send-message', {
         consultationId,
         senderId: consultant.id,
-        recipientId: clientId,
+        recipientId: resolvedClientId,
         content: '',
         type: 'image',
         mediaUrl: url,

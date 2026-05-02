@@ -212,7 +212,7 @@ export default function DashboardPage() {
                 <span className="text-base text-ink-200/80 ml-1">créditos</span>
               </p>
             </div>
-            <LinkButton href="/buy-credits" variant="gold" className="mt-5" fullWidth>
+            <LinkButton href="/comprar-creditos" variant="gold" className="mt-5" fullWidth>
               + Comprar créditos
             </LinkButton>
           </Card>
@@ -356,7 +356,7 @@ function ConsultantCard({
         <LinkButton href={`/consultor/${c.id}`} variant="outline" size="sm">Perfil</LinkButton>
         {c.isOnline ? (
           <LinkButton
-            href={hasCredits ? `/calling/${c.id}` : '/buy-credits'}
+            href={hasCredits ? `/calling/${c.id}` : '/comprar-creditos'}
             variant="primary"
             size="sm"
           >

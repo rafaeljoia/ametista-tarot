@@ -28,10 +28,17 @@ function playRing() {
 }
 
 const STATUS_RING: Record<string, string> = {
-  calling:  'border-mystic-500/40 animate-pulse-ring',
-  accepted: 'border-emerald-400/50',
-  declined: 'border-red-500/40',
-  failed:   'border-red-500/40',
+  calling:  'border-white/10',
+  accepted: 'border-emerald-400/40',
+  declined: 'border-red-500/30',
+  failed:   'border-red-500/30',
+}
+
+const STATUS_DOT: Record<string, string> = {
+  calling:  'bg-mystic-400',
+  accepted: 'bg-emerald-400',
+  declined: 'bg-red-400',
+  failed:   'bg-red-400',
 }
 
 export default function CallingPage() {
@@ -132,13 +139,21 @@ export default function CallingPage() {
   return (
     <main className="min-h-screen bg-ink-900 flex items-center justify-center px-4">
       <div className="text-center max-w-sm w-full">
-        <div
-          className={[
-            'w-32 h-32 mx-auto mb-8 rounded-full flex items-center justify-center border bg-ink-800/60',
-            STATUS_RING[callStatus],
-          ].join(' ')}
-        >
-          <Avatar name={consultant?.name || 'C'} size="2xl" />
+        <div className="relative w-32 h-32 mx-auto mb-8">
+          <div
+            className={[
+              'w-32 h-32 rounded-full flex items-center justify-center border bg-ink-800/60',
+              STATUS_RING[callStatus],
+            ].join(' ')}
+          >
+            <Avatar name={consultant?.name || 'C'} size="2xl" />
+          </div>
+          <span className="absolute right-1 bottom-1 flex h-3 w-3">
+            {callStatus === 'calling' && (
+              <span className={`absolute inline-flex h-full w-full rounded-full opacity-60 animate-ping ${STATUS_DOT[callStatus]}`} />
+            )}
+            <span className={`relative inline-flex rounded-full h-3 w-3 ring-2 ring-ink-900 ${STATUS_DOT[callStatus]}`} />
+          </span>
         </div>
 
         <h2 className="font-display text-2xl text-white tracking-tight">

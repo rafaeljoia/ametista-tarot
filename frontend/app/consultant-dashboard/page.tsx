@@ -245,10 +245,16 @@ export default function ConsultantDashboardPage() {
 
       <Modal open={!!incomingCall} onClose={handleDecline} size="sm" hideClose>
         <div className="text-center">
-          <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-mystic-500/15 border border-mystic-400/40 flex items-center justify-center animate-pulse-ring text-mystic-200">
-            <svg viewBox="0 0 24 24" className="w-9 h-9" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z" />
-            </svg>
+          <div className="relative w-16 h-16 mx-auto mb-5">
+            <div className="w-16 h-16 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-mystic-200">
+              <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z" />
+              </svg>
+            </div>
+            <span className="absolute -right-0.5 -bottom-0.5 flex h-3 w-3">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-70 animate-ping" />
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-400 ring-2 ring-ink-900" />
+            </span>
           </div>
           <h3 className="font-display text-2xl text-white mb-1">Chamada recebida</h3>
           <p className="text-ink-200 mb-6">
