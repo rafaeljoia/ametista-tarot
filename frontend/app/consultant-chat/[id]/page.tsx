@@ -63,6 +63,27 @@ export default function ConsultantChatPage() {
 
     const parsed = JSON.parse(consultantData)
     setConsultant(parsed)
+
+    // Hydrate timer base from server startedAt so reloads/reconnects show
+    // the real elapsed time instead of resetting to 00:00.
+    axios
+      .get(`${API}/consultations/${consultationId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((r) => {
+        if (r.data?.startedAt) {
+          startedAtRef.current = new Date(r.data.startedAt).getTime()
+        }
+        if (typeof r.data?.creditsUsed === 'number') {
+          setEarned(Number(r.data.creditsUsed))
+        }
+        if (r.data?.status === 'completed' && !endedRef.current) {
+          endedRef.current = true
+          router.replace(`/consulta/finalizada/${consultationId}?reason=ended&role=consultant`)
+        }
+      })
+      .catch(() => {})
+
     connectSocket(parsed, token)
 
     tickRef.current = setInterval(() => {
@@ -128,10 +149,11 @@ export default function ConsultantChatPage() {
       if (typeof data.costSoFar === 'number') setEarned(data.costSoFar)
     })
 
-    socket.on('consultation-ended', () => {
+    socket.on('consultation-ended', (data: any) => {
       if (endedRef.current) return
       endedRef.current = true
-      router.replace(`/consulta/finalizada/${consultationId}?reason=ended&role=consultant`)
+      const reason = data?.reason || 'ended'
+      router.replace(`/consulta/finalizada/${consultationId}?reason=${reason}&role=consultant`)
     })
 
     socketRef.current = socket
@@ -171,10 +193,10 @@ export default function ConsultantChatPage() {
     setEnding(true)
     try {
       const token = localStorage.getItem('consultant-token')
-      const elapsedMinutes = (Date.now() - startedAtRef.current) / 60000
+      // Server computes elapsed from its own startedAt — no client input.
       await axios.post(
         `${API}/consultations/${consultationId}/end`,
-        { elapsedMinutes },
+        {},
         { headers: { Authorization: `Bearer ${token}` } },
       )
       endedRef.current = true

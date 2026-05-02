@@ -19,7 +19,9 @@ export class ConsultantEarning {
   @Column('uuid')
   consultantId: string;
 
-  @Index()
+  // One earning record per consultation — protects against duplicate inserts
+  // under concurrent endConsultation() calls.
+  @Index({ unique: true })
   @Column('uuid')
   consultationId: string;
 

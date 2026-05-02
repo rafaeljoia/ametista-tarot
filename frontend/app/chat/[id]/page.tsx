@@ -83,6 +83,27 @@ export default function ChatPage() {
     consultationId.current = consultationIdFromUrl || `${parsedUser.id}-${consultantId}`
 
     fetchConsultant(token)
+    // Hydrate timer base from the server's startedAt so reloads/reconnects
+    // don't reset MM:SS to 00:00.
+    if (consultationIdFromUrl) {
+      axios
+        .get(`${API}/consultations/${consultationIdFromUrl}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((r) => {
+          if (r.data?.startedAt) {
+            startedAtRef.current = new Date(r.data.startedAt).getTime()
+          }
+          if (typeof r.data?.creditsUsed === 'number') {
+            setCostSoFar(Number(r.data.creditsUsed))
+          }
+          if (r.data?.status === 'completed' && !endedRef.current) {
+            endedRef.current = true
+            router.replace(`/consulta/finalizada/${consultationIdFromUrl}?reason=ended`)
+          }
+        })
+        .catch(() => {})
+    }
     connectSocket(parsedUser, token)
 
     tickRef.current = setInterval(() => {
@@ -221,10 +242,10 @@ export default function ChatPage() {
     setEnding(true)
     try {
       const token = localStorage.getItem('token')
-      const elapsedMinutes = (Date.now() - startedAtRef.current) / 60000
+      // Server computes elapsed time from its own startedAt — no client input.
       await axios.post(
         `${API}/consultations/${consultationId.current}/end`,
-        { elapsedMinutes },
+        {},
         { headers: { Authorization: `Bearer ${token}` } },
       )
       endedRef.current = true

@@ -35,23 +35,29 @@ export class BillingService {
   ) {}
 
   /**
-   * Idempotent per-minute charge.
-   * Charges only the delta between the consultation's already-billed minutes
-   * and the requested target. Caps at the user's available credits and
-   * signals out-of-credits when funds are exhausted.
+   * Idempotent per-minute charge. Locks the consultation row first to serialize
+   * concurrent ticks, then locks the user row to safely deduct credits.
+   * Charges only the delta vs already-billed minutes, capped at available credits.
    */
   async chargeForMinutes(
     consultationId: string,
     targetElapsedMinutes: number,
   ): Promise<BillingTickResult | null> {
     return this.consultationsRepo.manager.transaction(async (tx) => {
-      const c = await tx.findOne(Consultation, { where: { id: consultationId } });
+      // Pessimistic lock so two concurrent ticks can't both bill the same minute.
+      const c = await tx.findOne(Consultation, {
+        where: { id: consultationId },
+        lock: { mode: 'pessimistic_write' },
+      });
       if (!c || c.status !== 'active') return null;
 
       const consultant = await tx.findOne(Consultant, {
         where: { id: c.consultantId },
       });
-      const user = await tx.findOne(User, { where: { id: c.clientId } });
+      const user = await tx.findOne(User, {
+        where: { id: c.clientId },
+        lock: { mode: 'pessimistic_write' },
+      });
       if (!consultant || !user) return null;
 
       const already = Number(c.minutesUsed || 0);
@@ -109,24 +115,33 @@ export class BillingService {
   }
 
   /**
-   * Finalize a consultation: optionally bills any remaining elapsed minutes,
-   * marks it completed, increments the consultant's counter, and records
-   * the earning split using the consultant's commissionPercent.
-   * Idempotent: returns the existing consultation if already completed.
+   * Finalize a consultation. Always recomputes the final elapsed time from the
+   * server-side `startedAt` (caller-provided values are not trusted). Records
+   * the consultant's earning split exactly once, protected by the unique index
+   * on `consultant_earnings.consultationId`.
    */
-  async endConsultation(
-    consultationId: string,
-    finalElapsedMinutes?: number,
-  ): Promise<Consultation | null> {
-    // First, attempt a final charge using the existing transactional method.
-    if (typeof finalElapsedMinutes === 'number' && finalElapsedMinutes > 0) {
-      await this.chargeForMinutes(consultationId, finalElapsedMinutes).catch((err) =>
+  async endConsultation(consultationId: string): Promise<Consultation | null> {
+    // Step 1: final per-minute charge using server-side elapsed time.
+    const current = await this.consultationsRepo.findOne({
+      where: { id: consultationId },
+    });
+    if (!current) return null;
+    if (current.status === 'active' && current.startedAt) {
+      const elapsed = Math.max(
+        0,
+        (Date.now() - new Date(current.startedAt).getTime()) / 60000,
+      );
+      await this.chargeForMinutes(consultationId, elapsed).catch((err) =>
         this.logger.warn(`Final charge failed: ${err?.message}`),
       );
     }
 
+    // Step 2: flip status + record earning, transactional and idempotent.
     return this.consultationsRepo.manager.transaction(async (tx) => {
-      const c = await tx.findOne(Consultation, { where: { id: consultationId } });
+      const c = await tx.findOne(Consultation, {
+        where: { id: consultationId },
+        lock: { mode: 'pessimistic_write' },
+      });
       if (!c) return null;
       if (c.status === 'completed') return c;
 
@@ -136,26 +151,39 @@ export class BillingService {
 
       const consultant = await tx.findOne(Consultant, {
         where: { id: c.consultantId },
+        lock: { mode: 'pessimistic_write' },
       });
       if (consultant) {
         consultant.consultationsCount = (consultant.consultationsCount || 0) + 1;
         await tx.save(Consultant, consultant);
 
-        const commissionPercent = Number(consultant.commissionPercent ?? 50);
         const grossAmount = Number(c.creditsUsed || 0);
-        const consultantAmount = +(grossAmount * (commissionPercent / 100)).toFixed(2);
-        const platformAmount = +(grossAmount - consultantAmount).toFixed(2);
-
         if (grossAmount > 0) {
-          const earning = tx.create(ConsultantEarning, {
-            consultantId: consultant.id,
-            consultationId: c.id,
-            grossAmount,
-            commissionPercent,
-            consultantAmount,
-            platformAmount,
+          const commissionPercent = Number(consultant.commissionPercent ?? 50);
+          const consultantAmount = +(grossAmount * (commissionPercent / 100)).toFixed(2);
+          const platformAmount = +(grossAmount - consultantAmount).toFixed(2);
+
+          // Defense in depth on top of the unique index — avoid a noisy unique
+          // violation in the common path while still relying on the DB
+          // constraint for correctness under true concurrent commits.
+          const existing = await tx.findOne(ConsultantEarning, {
+            where: { consultationId: c.id },
           });
-          await tx.save(ConsultantEarning, earning);
+          if (!existing) {
+            try {
+              const earning = tx.create(ConsultantEarning, {
+                consultantId: consultant.id,
+                consultationId: c.id,
+                grossAmount,
+                commissionPercent,
+                consultantAmount,
+                platformAmount,
+              });
+              await tx.save(ConsultantEarning, earning);
+            } catch (err: any) {
+              if (!String(err?.message || '').includes('duplicate')) throw err;
+            }
+          }
         }
       }
 

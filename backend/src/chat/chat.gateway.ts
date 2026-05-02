@@ -7,9 +7,15 @@ import {
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import * as jwt from 'jsonwebtoken';
 import { ChatService } from './chat.service';
 import { PresenceService } from '../presence/presence.service';
 import { BillingService } from '../billing/billing.service';
+
+interface SocketIdentity {
+  sub: string;
+  role: 'user' | 'consultant';
+}
 
 @WebSocketGateway({
   path: '/api/socket.io',
@@ -23,7 +29,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private tickIntervals = new Map<string, ReturnType<typeof setInterval>>();
   private startTimes = new Map<string, number>();
   private readonly TICK_MS = 60_000;
-  private readonly LOW_CREDITS_THRESHOLD_MIN = 2; // emit warning when < 2 minutes left
+  private readonly LOW_CREDITS_THRESHOLD_MIN = 2;
 
   constructor(
     private chatService: ChatService,
@@ -31,8 +37,29 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private billingService: BillingService,
   ) {}
 
+  /** Verify the JWT presented at handshake time and bind identity to socket.data. */
+  private getIdentity(client: Socket): SocketIdentity | null {
+    return (client.data?.identity as SocketIdentity) || null;
+  }
+
   handleConnection(client: Socket) {
-    this.logger.log(`Conectado: ${client.id}`);
+    const token =
+      (client.handshake.auth?.token as string) ||
+      (client.handshake.headers?.authorization || '').replace(/^Bearer /, '');
+    if (token) {
+      try {
+        const payload = jwt.verify(
+          token,
+          process.env.JWT_SECRET || 'your-secret-key',
+        ) as any;
+        if (payload?.sub && (payload.role === 'user' || payload.role === 'consultant')) {
+          client.data.identity = { sub: payload.sub, role: payload.role };
+        }
+      } catch (err: any) {
+        this.logger.warn(`Invalid socket token from ${client.id}: ${err?.message}`);
+      }
+    }
+    this.logger.log(`Conectado: ${client.id} (auth=${!!client.data?.identity})`);
   }
 
   handleDisconnect(client: Socket) {
@@ -47,18 +74,23 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('register-user')
   handleRegisterUser(client: Socket, data: { userId: string }) {
-    this.presenceService.setUserSocket(data.userId, client.id);
-    client.join(`user:${data.userId}`);
+    const id = this.getIdentity(client);
+    // If we have a verified identity, force it; otherwise fall back to the
+    // legacy behavior so existing clients keep working during rollout.
+    const userId = id?.role === 'user' ? id.sub : data.userId;
+    if (!userId) return;
+    this.presenceService.setUserSocket(userId, client.id);
+    client.join(`user:${userId}`);
   }
 
   @SubscribeMessage('consultant-online')
   handleConsultantOnline(client: Socket, data: { consultantId: string }) {
-    this.presenceService.setConsultantOnline(data.consultantId, client.id);
-    client.join(`consultant:${data.consultantId}`);
-    this.server.emit('consultant-status', {
-      consultantId: data.consultantId,
-      isOnline: true,
-    });
+    const id = this.getIdentity(client);
+    const consultantId = id?.role === 'consultant' ? id.sub : data.consultantId;
+    if (!consultantId) return;
+    this.presenceService.setConsultantOnline(consultantId, client.id);
+    client.join(`consultant:${consultantId}`);
+    this.server.emit('consultant-status', { consultantId, isOnline: true });
   }
 
   @SubscribeMessage('get-online-consultants')
@@ -73,21 +105,24 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client: Socket,
     data: { consultantId: string; clientId: string; clientName: string },
   ) {
-    const consultantSocketId = this.presenceService.getConsultantSocket(data.consultantId);
+    const id = this.getIdentity(client);
+    const clientId = id?.role === 'user' ? id.sub : data.clientId;
+    if (!clientId || !data.consultantId) return;
 
+    const consultantSocketId = this.presenceService.getConsultantSocket(data.consultantId);
     if (!consultantSocketId) {
       client.emit('call-failed', { reason: 'Consultor está offline' });
       return;
     }
 
-    this.presenceService.setUserSocket(data.clientId, client.id);
-    client.join(`user:${data.clientId}`);
+    this.presenceService.setUserSocket(clientId, client.id);
+    client.join(`user:${clientId}`);
 
-    const callId = `${data.clientId}-${data.consultantId}`;
+    const callId = `${clientId}-${data.consultantId}`;
 
     this.server.to(consultantSocketId).emit('incoming-call', {
       callId,
-      clientId: data.clientId,
+      clientId,
       clientName: data.clientName,
     });
 
@@ -99,6 +134,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client: Socket,
     data: { callId: string; clientId: string; consultantId: string },
   ) {
+    const id = this.getIdentity(client);
+    // Only the consultant being called may accept.
+    if (id && id.role === 'consultant' && id.sub !== data.consultantId) {
+      this.logger.warn(`accept-call rejected: identity mismatch ${id.sub} vs ${data.consultantId}`);
+      return;
+    }
+
     const consultation = await this.chatService.startConsultation(
       data.clientId,
       data.consultantId,
@@ -116,7 +158,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       clientId: data.clientId,
     });
 
-    // Kick off the per-minute billing tick
     this.startBillingTick(consultation.id);
   }
 
@@ -135,14 +176,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client: Socket,
     data: { userId: string; consultationId: string },
   ) {
-    client.join(data.consultationId);
-    this.presenceService.setUserSocket(data.userId, client.id);
-    client.emit('joined', { consultationId: data.consultationId });
-    this.logger.log(
-      `Socket ${client.id} (user ${data.userId}) entrou na sala ${data.consultationId}`,
-    );
+    const id = this.getIdentity(client);
+    const userId = id ? id.sub : data.userId;
+    if (!userId || !data.consultationId) return;
 
-    // Recover the tick if the server restarted while a consultation is still active
+    client.join(data.consultationId);
+    this.presenceService.setUserSocket(userId, client.id);
+    client.emit('joined', { consultationId: data.consultationId });
+    this.logger.log(`Socket ${client.id} (user ${userId}) entrou na sala ${data.consultationId}`);
+
     const c = await this.billingService.findActive(data.consultationId);
     if (c && c.status === 'active' && !this.tickIntervals.has(data.consultationId)) {
       this.startBillingTick(data.consultationId);
@@ -154,9 +196,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client: Socket,
     data: { consultationId: string; senderId: string; recipientId: string; content: string },
   ) {
+    const id = this.getIdentity(client);
+    // If we know who the socket is, force the senderId to match the JWT subject.
+    const senderId = id ? id.sub : data.senderId;
+    if (!senderId || !data.consultationId || !data.recipientId || !data.content) return;
+
     const message = await this.chatService.saveMessage(
       data.consultationId,
-      data.senderId,
+      senderId,
       data.recipientId,
       data.content,
     );
@@ -233,7 +280,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
         if (result.outOfCredits) {
-          await this.billingService.endConsultation(consultationId, result.minutesElapsed);
+          await this.billingService.endConsultation(consultationId);
           this.notifyEnded(consultationId, {
             reason: 'out-of-credits',
             minutesUsed: result.minutesCharged,
@@ -245,7 +292,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
     };
 
-    // First tick after one minute, not immediately
     const interval = setInterval(tick, this.TICK_MS);
     this.tickIntervals.set(consultationId, interval);
   }
@@ -257,7 +303,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.startTimes.delete(consultationId);
   }
 
-  /** Public so ConsultationsController can broadcast manual end events. */
   notifyEnded(
     consultationId: string,
     payload: { reason: string; minutesUsed: number; creditsUsed: number },
