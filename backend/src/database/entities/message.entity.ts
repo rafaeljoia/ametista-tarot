@@ -41,11 +41,20 @@ export class Message {
   @JoinColumn({ name: 'consultationId' })
   consultation: Consultation;
 
-  @ManyToOne(() => User, (user) => user.messages)
+  // NOTE: senderId e recipientId são UUIDs polimórficos — podem apontar para
+  // `users.id` (cliente) ou `consultants.id` (consultor) dependendo da direção
+  // da mensagem. Por isso NÃO criamos foreign keys físicas aqui; a autorização
+  // é feita no ChatGateway via JWT (role + consultation membership). FKs físicas
+  // quebravam o caminho consultor→cliente (FK_2db9cf2b3ca111742793f6c37ce).
+  @ManyToOne(() => User, (user) => user.messages, {
+    createForeignKeyConstraints: false,
+  })
   @JoinColumn({ name: 'senderId' })
   sender: User;
 
-  @ManyToOne(() => Consultant)
+  @ManyToOne(() => Consultant, {
+    createForeignKeyConstraints: false,
+  })
   @JoinColumn({ name: 'recipientId' })
   recipient: Consultant;
 }
