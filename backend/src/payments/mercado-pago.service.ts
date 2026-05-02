@@ -188,8 +188,11 @@ export class MercadoPagoService {
       .update(manifest)
       .digest('hex');
 
+    const a = Buffer.from(expected, 'utf8');
+    const b = Buffer.from(v1, 'utf8');
+    if (a.length !== b.length) return false; // timingSafeEqual requires equal lengths
     try {
-      return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
+      return crypto.timingSafeEqual(a, b);
     } catch {
       return false;
     }

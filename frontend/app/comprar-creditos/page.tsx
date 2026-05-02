@@ -173,6 +173,10 @@ export default function ComprarCreditosPage() {
       const paymentMethodId = methods?.results?.[0]?.id || 'visa'
 
       const token = localStorage.getItem('token')
+      // Clear sensitive data from React state immediately after tokenization;
+      // the token is single-use and bound to the original card.
+      setCard((c) => ({ ...c, number: '', cvv: '' }))
+
       const r = await axios.post(`${API}/payments/card`, {
         packageId: selected.id,
         cardToken: tokenResp.id,

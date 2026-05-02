@@ -263,8 +263,9 @@ export class PaymentsService {
       });
       if (!user) return;
 
-      user.credits = Number(user.credits || 0) + Number(tx.creditsAmount);
-      await m.save(User, user);
+      // Atomic SQL-level increment — defends against any code path that
+      // updates credits without holding the same row lock.
+      await m.increment(User, { id: tx.userId }, 'credits', tx.creditsAmount);
 
       const pricePerCredit =
         tx.creditsAmount > 0 ? +(Number(tx.gross) / tx.creditsAmount).toFixed(4) : 0;

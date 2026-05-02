@@ -46,9 +46,12 @@ export class Transaction {
   @Column({ type: 'varchar', length: 16, default: 'pending' })
   status: TransactionStatus;
 
-  // Mercado Pago payment id (or other gateway id). Unique to support
-  // idempotent webhook processing — same gateway id can't insert twice.
-  @Index({ unique: true, where: '"gatewayId" IS NOT NULL' })
+  // Mercado Pago payment id (or other gateway id). Indexed for fast lookup
+  // from the webhook handler. Idempotency is enforced primarily by the
+  // `creditedAt` guard + pessimistic lock in PaymentsService.applyApproval —
+  // a partial unique index here would be ideal but TypeORM's `synchronize`
+  // is unreliable for partial indexes across upgrades, so we keep it plain.
+  @Index()
   @Column({ type: 'varchar', nullable: true })
   gatewayId: string | null;
 
