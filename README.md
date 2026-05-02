@@ -251,3 +251,7 @@ Este projeto está licenciado sob a Licença MIT.
 ## Suporte
 
 Para suporte, abra uma issue no repositório do GitHub ou entre em contato através do email de suporte.
+
+---
+
+_Last deploy trigger: 2026-05-02T23:01:53Z — premium UI overhaul + chat FK hotfix (commit 2cbd816)._
