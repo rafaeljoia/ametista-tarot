@@ -13,6 +13,12 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { UsersService } from './users.service';
 
+function requireUserSelf(req: any, id: string) {
+  if (req.user?.role !== 'user' || req.user?.id !== id) {
+    throw new ForbiddenException();
+  }
+}
+
 @Controller('users')
 export class UsersController {
   constructor(private usersService: UsersService) {}
@@ -58,9 +64,11 @@ export class UsersController {
     return this.usersService.getCreditHistory(req.user.id);
   }
 
+  // Legacy endpoints — restricted to the authenticated user's own id
   @Get(':id')
   @UseGuards(AuthGuard('jwt'))
-  async findById(@Param('id') id: string) {
+  async findById(@Param('id') id: string, @Request() req) {
+    requireUserSelf(req, id);
     return this.usersService.findById(id);
   }
 
@@ -69,13 +77,16 @@ export class UsersController {
   async addCredits(
     @Param('id') id: string,
     @Body() body: { amount: number; pricePerCredit: number },
+    @Request() req,
   ) {
+    requireUserSelf(req, id);
     return this.usersService.addCredits(id, body.amount, body.pricePerCredit);
   }
 
   @Get(':id/credits/history')
   @UseGuards(AuthGuard('jwt'))
-  async getCreditHistory(@Param('id') id: string) {
+  async getCreditHistory(@Param('id') id: string, @Request() req) {
+    requireUserSelf(req, id);
     return this.usersService.getCreditHistory(id);
   }
 }

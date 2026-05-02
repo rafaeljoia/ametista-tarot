@@ -9,11 +9,26 @@ import {
   Request,
   ForbiddenException,
   BadRequestException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConsultantsService } from './consultants.service';
 import { PresenceService } from '../presence/presence.service';
+
+// Public-safe shape for consultant data — never includes email, password, or internal flags.
+function toPublic(c: any, isOnline?: boolean) {
+  if (!c) return c;
+  return {
+    id: c.id,
+    name: c.name,
+    specialty: c.specialty,
+    bio: c.bio,
+    rating: c.rating,
+    pricePerMinute: c.pricePerMinute,
+    isAvailable: c.isAvailable,
+    consultationsCount: c.consultationsCount,
+    ...(isOnline !== undefined ? { isOnline } : {}),
+  };
+}
 
 @Controller('consultants')
 export class ConsultantsController {
@@ -31,7 +46,7 @@ export class ConsultantsController {
   async findAll() {
     const onlineIds = this.presenceService.getOnlineConsultantIds();
     const list = await this.consultantsService.findAll();
-    return list.map((c) => ({ ...c, isOnline: onlineIds.includes(c.id) }));
+    return list.map((c) => toPublic(c, onlineIds.includes(c.id)));
   }
 
   @Get('me')
@@ -91,6 +106,6 @@ export class ConsultantsController {
   async findById(@Param('id') id: string) {
     const onlineIds = this.presenceService.getOnlineConsultantIds();
     const consultant = await this.consultantsService.findById(id);
-    return { ...consultant, isOnline: onlineIds.includes(consultant.id) };
+    return toPublic(consultant, onlineIds.includes(consultant.id));
   }
 }
