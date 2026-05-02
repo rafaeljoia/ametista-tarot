@@ -37,6 +37,19 @@ export class Consultant {
   @Column({ default: false })
   isAvailable: boolean;
 
+  // Self-declared status set by the consultant from the dashboard.
+  // - 'online'           : visible & accepting calls
+  // - 'busy'             : visible but declines new calls; auto-logout after 20min
+  // - 'in_consultation'  : auto-set by the chat gateway when a call is accepted
+  // - 'offline'          : socket disconnected / forced logout
+  @Column({ type: 'varchar', length: 32, default: 'offline' })
+  availabilityStatus: 'online' | 'busy' | 'in_consultation' | 'offline';
+
+  // Timestamp the consultant entered 'busy'. Cleared on any other transition.
+  // Used by the cron to auto-flip busy → offline after 20 minutes.
+  @Column({ type: 'timestamptz', nullable: true })
+  busySince: Date | null;
+
   @Column({ nullable: true })
   availableFrom: Date;
 

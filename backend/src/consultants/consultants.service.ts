@@ -31,9 +31,46 @@ export class ConsultantsService {
         'pricePerMinute',
         'isAvailable',
         'consultationsCount',
+        'availabilityStatus',
       ],
       order: { rating: 'DESC' },
     });
+  }
+
+  // ---- Availability status (self-declared) -------------------------------
+
+  /**
+   * Update the consultant's availability status. Manages the `busySince`
+   * timestamp side-effect:
+   *   - busy           → busySince = now()
+   *   - online/in_consultation/offline → busySince = null
+   * Returns the refreshed consultant (without password).
+   */
+  async setStatus(
+    id: string,
+    status: 'online' | 'busy' | 'in_consultation' | 'offline',
+  ) {
+    const update: Partial<Consultant> = { availabilityStatus: status };
+    update.busySince = status === 'busy' ? new Date() : null;
+    await this.consultantsRepository.update(id, update);
+    this.invalidateTopCache();
+    return this.findById(id);
+  }
+
+  /**
+   * Returns IDs of consultants stuck in `busy` for longer than `maxAgeMinutes`.
+   * Used by the gateway cron to force-flip them to offline + logout.
+   */
+  async findBusyExpiredIds(maxAgeMinutes: number): Promise<string[]> {
+    const cutoff = new Date(Date.now() - maxAgeMinutes * 60_000);
+    const rows = await this.consultantsRepository
+      .createQueryBuilder('c')
+      .select('c.id', 'id')
+      .where('c."availabilityStatus" = :s', { s: 'busy' })
+      .andWhere('c."busySince" IS NOT NULL')
+      .andWhere('c."busySince" < :cutoff', { cutoff })
+      .getRawMany();
+    return rows.map((r) => r.id as string);
   }
 
   // Cache simples em memória do Top 10. Refresh em background a cada TTL.
@@ -56,6 +93,7 @@ export class ConsultantsService {
         'pricePerMinute',
         'isAvailable',
         'consultationsCount',
+        'availabilityStatus',
       ],
     });
     // Score = rating × log10(consultationsCount + 1) — pondera reputação

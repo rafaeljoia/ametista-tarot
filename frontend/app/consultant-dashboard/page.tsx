@@ -16,7 +16,10 @@ interface Consultant {
   specialty: string
   isAvailable: boolean
   rating?: number
+  availabilityStatus?: AvailabilityStatus
 }
+
+type AvailabilityStatus = 'online' | 'busy' | 'in_consultation' | 'offline'
 
 interface IncomingCall {
   callId: string
@@ -65,6 +68,10 @@ export default function ConsultantDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [status, setStatus] = useState<'waiting' | 'in-call'>('waiting')
 
+  const [myStatus, setMyStatus] = useState<AvailabilityStatus>('online')
+  const [statusSaving, setStatusSaving] = useState(false)
+  const [statusToast, setStatusToast] = useState<string | null>(null)
+
   const socketRef = useRef<Socket | null>(null)
   const bellInterval = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -79,6 +86,17 @@ export default function ConsultantDashboardPage() {
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
     const baseUrl = apiUrl.replace(/\/api$/, '')
+
+    // Revalidate consultant (incl. availabilityStatus) from server.
+    axios
+      .get(`${apiUrl}/consultants/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => {
+        setConsultant(r.data)
+        localStorage.setItem('consultant', JSON.stringify(r.data))
+        const s = (r.data?.availabilityStatus as AvailabilityStatus) || 'online'
+        setMyStatus(s)
+      })
+      .catch(() => {})
 
     const socket = io(baseUrl, {
       path: '/api/socket.io',
@@ -102,8 +120,18 @@ export default function ConsultantDashboardPage() {
     })
     socket.on('call-started', (data: { consultationId: string; clientId: string }) => {
       setStatus('in-call'); setIncomingCall(null)
+      setMyStatus('in_consultation')
       if (bellInterval.current) clearInterval(bellInterval.current)
       router.push(`/consultant-chat/${data.consultationId}?clientId=${data.clientId}`)
+    })
+
+    // Server forced this session out (e.g. 20min in 'busy' → auto-logout).
+    socket.on('force-logout', (data: { reason?: string; message?: string }) => {
+      try { socket.disconnect() } catch {}
+      localStorage.removeItem('consultant-token')
+      localStorage.removeItem('consultant')
+      const msg = encodeURIComponent(data?.message || 'Sessão encerrada.')
+      router.push(`/consultant-login?notice=${msg}`)
     })
 
     socketRef.current = socket
@@ -122,6 +150,40 @@ export default function ConsultantDashboardPage() {
       setStats(r.data)
     } catch (e) {
       console.error('stats error', e)
+    }
+  }
+
+  const handleChangeStatus = async (next: 'online' | 'busy') => {
+    if (myStatus === 'in_consultation') {
+      setStatusToast('Você está em atendimento. O status muda automaticamente ao fim da consulta.')
+      setTimeout(() => setStatusToast(null), 3500)
+      return
+    }
+    if (next === myStatus) return
+    const token = localStorage.getItem('consultant-token')
+    if (!token) return
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+    setStatusSaving(true)
+    const prev = myStatus
+    setMyStatus(next) // optimistic
+    try {
+      await axios.patch(
+        `${apiUrl}/consultants/me/status`,
+        { status: next },
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      setStatusToast(
+        next === 'busy'
+          ? 'Status: Ocupado. Após 20 min sem mudança, sua sessão será encerrada.'
+          : 'Status: Online — você está visível para os clientes.',
+      )
+      setTimeout(() => setStatusToast(null), 3500)
+    } catch {
+      setMyStatus(prev) // revert
+      setStatusToast('Falha ao atualizar status. Tente novamente.')
+      setTimeout(() => setStatusToast(null), 3500)
+    } finally {
+      setStatusSaving(false)
     }
   }
 
@@ -163,12 +225,69 @@ export default function ConsultantDashboardPage() {
             </p>
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
-              {connected ? (
-                <Badge variant="success" pulse>Online</Badge>
-              ) : (
+              {!connected ? (
                 <Badge variant="danger">Reconectando…</Badge>
+              ) : myStatus === 'in_consultation' ? (
+                <Badge variant="gold" pulse>Em atendimento</Badge>
+              ) : myStatus === 'busy' ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full bg-amber-500/10 text-amber-200 border border-amber-400/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-300" />
+                  Ocupado
+                </span>
+              ) : (
+                <Badge variant="success" pulse>Online</Badge>
               )}
-              {status === 'in-call' && <Badge variant="gold">Em atendimento</Badge>}
+            </div>
+
+            {/* Status switcher */}
+            <div className="mt-5 pt-5 border-t border-white/5">
+              <p className="text-xs uppercase tracking-wider text-ink-300/80 mb-3">
+                Definir disponibilidade
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleChangeStatus('online')}
+                  disabled={statusSaving || myStatus === 'in_consultation'}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
+                    myStatus === 'online'
+                      ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-200'
+                      : 'bg-white/[0.02] border-white/10 text-ink-200 hover:bg-white/[0.05]'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  Online
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChangeStatus('busy')}
+                  disabled={statusSaving || myStatus === 'in_consultation'}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
+                    myStatus === 'busy'
+                      ? 'bg-amber-500/15 border-amber-400/40 text-amber-200'
+                      : 'bg-white/[0.02] border-white/10 text-ink-200 hover:bg-white/[0.05]'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  Ocupado
+                </button>
+                <div
+                  className={`px-4 py-2 rounded-lg text-sm font-medium border ${
+                    myStatus === 'in_consultation'
+                      ? 'bg-mystic-500/15 border-mystic-400/40 text-mystic-100'
+                      : 'bg-white/[0.02] border-white/10 text-ink-300/60'
+                  }`}
+                  title="Definido automaticamente quando você atende uma chamada"
+                >
+                  Em atendimento (auto)
+                </div>
+              </div>
+              {myStatus === 'busy' && (
+                <p className="text-xs text-amber-200/80 mt-3">
+                  Ocupado por mais de 20 minutos sem mudança encerra sua sessão automaticamente.
+                </p>
+              )}
+              {statusToast && (
+                <p className="text-xs text-ink-200 mt-3">{statusToast}</p>
+              )}
             </div>
           </Card>
 

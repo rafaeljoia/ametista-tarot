@@ -27,6 +27,7 @@ function toPublic(c: any, isOnline?: boolean) {
     pricePerMinute: c.pricePerMinute,
     isAvailable: c.isAvailable,
     consultationsCount: c.consultationsCount,
+    availabilityStatus: c.availabilityStatus || 'offline',
     ...(isOnline !== undefined ? { isOnline } : {}),
   };
 }
@@ -89,6 +90,22 @@ export class ConsultantsController {
   ) {
     if (req.user.role !== 'consultant') throw new ForbiddenException();
     return this.consultantsService.updateProfile(req.user.id, body);
+  }
+
+  @Patch('me/status')
+  @UseGuards(AuthGuard('jwt'))
+  async setMyStatus(
+    @Request() req,
+    @Body() body: { status: 'online' | 'busy' },
+  ) {
+    if (req.user.role !== 'consultant') throw new ForbiddenException();
+    // Manual transitions are restricted to online ↔ busy. The other two
+    // states ('in_consultation' / 'offline') are owned by the chat gateway
+    // and the cron — never user-settable.
+    if (body?.status !== 'online' && body?.status !== 'busy') {
+      throw new BadRequestException('Status inválido. Use "online" ou "busy".');
+    }
+    return this.consultantsService.setStatus(req.user.id, body.status);
   }
 
   @Post('me/change-password')

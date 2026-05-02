@@ -7,6 +7,7 @@ import { Consultation } from '../database/entities/consultation.entity';
 import { PresenceModule } from '../presence/presence.module';
 import { BillingModule } from '../billing/billing.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ConsultantsModule } from '../consultants/consultants.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     PresenceModule,
     BillingModule,
     NotificationsModule,
+    ConsultantsModule,
   ],
   providers: [ChatService, ChatGateway],
   exports: [ChatService, ChatGateway],

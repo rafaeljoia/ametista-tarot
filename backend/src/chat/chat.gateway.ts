@@ -5,13 +5,14 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
+import { Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import * as jwt from 'jsonwebtoken';
 import { ChatService } from './chat.service';
 import { PresenceService } from '../presence/presence.service';
 import { BillingService } from '../billing/billing.service';
 import { AvailabilityAlertService } from '../notifications/availability-alert.service';
+import { ConsultantsService } from '../consultants/consultants.service';
 
 type IncomingMessageType = 'text' | 'image';
 
@@ -24,7 +25,9 @@ interface SocketIdentity {
   path: '/api/socket.io',
   cors: { origin: '*', credentials: true },
 })
-export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class ChatGateway
+  implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit, OnModuleDestroy
+{
   @WebSocketServer()
   server: Server;
 
@@ -34,12 +37,69 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly TICK_MS = 60_000;
   private readonly LOW_CREDITS_THRESHOLD_MIN = 2;
 
+  // Auto-logout cron: scans every minute for consultants stuck in 'busy' for
+  // more than BUSY_TIMEOUT_MIN; flips them to offline and force-logs-out the
+  // socket.
+  private busyCronInterval: ReturnType<typeof setInterval> | null = null;
+  private readonly BUSY_CRON_MS = 60_000;
+  private readonly BUSY_TIMEOUT_MIN = 20;
+
   constructor(
     private chatService: ChatService,
     private presenceService: PresenceService,
     private billingService: BillingService,
     private availabilityAlerts: AvailabilityAlertService,
+    private consultantsService: ConsultantsService,
   ) {}
+
+  onModuleInit() {
+    this.busyCronInterval = setInterval(
+      () => this.runBusyTimeoutCron(),
+      this.BUSY_CRON_MS,
+    );
+  }
+
+  onModuleDestroy() {
+    if (this.busyCronInterval) clearInterval(this.busyCronInterval);
+    this.busyCronInterval = null;
+  }
+
+  /**
+   * Scan for consultants in `busy` for over BUSY_TIMEOUT_MIN minutes and
+   * force-logout their socket. Idempotent — running it twice in a row on the
+   * same consultant is a no-op (status already 'offline').
+   */
+  private async runBusyTimeoutCron() {
+    try {
+      const ids = await this.consultantsService.findBusyExpiredIds(
+        this.BUSY_TIMEOUT_MIN,
+      );
+      for (const consultantId of ids) {
+        await this.consultantsService
+          .setStatus(consultantId, 'offline')
+          .catch((e) =>
+            this.logger.warn(`busy-cron setStatus offline failed: ${e?.message}`),
+          );
+        const socketId = this.presenceService.getConsultantSocket(consultantId);
+        if (socketId) {
+          this.server.to(socketId).emit('force-logout', {
+            reason: 'busy-timeout',
+            message:
+              'Sessão encerrada após 20 minutos em "Ocupado". Faça login novamente para voltar a atender.',
+          });
+          // Disconnect after a short delay to let the client process the event.
+          setTimeout(() => {
+            const s = this.server.sockets.sockets.get(socketId);
+            if (s) s.disconnect(true);
+          }, 1500);
+        }
+        this.server.emit('consultant-status', { consultantId, isOnline: false });
+        this.logger.log(`busy-cron: consultor ${consultantId} → offline (timeout 20min)`);
+      }
+    } catch (err: any) {
+      this.logger.error(`busy-cron failed: ${err?.message}`);
+    }
+  }
 
   /** Verify the JWT presented at handshake time and bind identity to socket.data. */
   private getIdentity(client: Socket): SocketIdentity | null {
@@ -73,6 +133,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         consultantId: removed.consultantId,
         isOnline: false,
       });
+      // Fire-and-forget: don't block the disconnect on a DB write.
+      this.consultantsService
+        .setStatus(removed.consultantId, 'offline')
+        .catch((e) =>
+          this.logger.warn(`disconnect setStatus offline failed: ${e?.message}`),
+        );
     }
   }
 
@@ -97,6 +163,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.presenceService.setConsultantOnline(consultantId, client.id);
     client.join(`consultant:${consultantId}`);
     this.server.emit('consultant-status', { consultantId, isOnline: true });
+
+    // Sync DB status, but never overwrite 'busy' (consultant explicitly asked
+    // to stay busy) or 'in_consultation' (in an active call).
+    this.consultantsService
+      .findById(consultantId)
+      .then((c: any) => {
+        const current = c?.availabilityStatus;
+        if (current !== 'busy' && current !== 'in_consultation') {
+          return this.consultantsService.setStatus(consultantId, 'online');
+        }
+        return null;
+      })
+      .catch((e) =>
+        this.logger.warn(`consultant-online setStatus failed: ${e?.message}`),
+      );
 
     // Disparo de notificações por e-mail somente em transições offline→online
     // para evitar spam quando o consultor reconecta o socket.
@@ -164,6 +245,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       data.clientId,
       data.consultantId,
     );
+
+    // Mark the consultant as 'in_consultation' for the duration of the call.
+    this.consultantsService
+      .setStatus(data.consultantId, 'in_consultation')
+      .catch((e) =>
+        this.logger.warn(`accept-call setStatus failed: ${e?.message}`),
+      );
 
     this.server.to(`user:${data.clientId}`).emit('call-accepted', {
       callId: data.callId,
@@ -382,5 +470,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       ...payload,
     });
     this.stopBillingTick(consultationId);
+
+    // Revert the consultant back to 'online' (or 'offline' if disconnected).
+    this.chatService
+      .findConsultation(consultationId)
+      .then((c) => {
+        if (!c?.consultantId) return null;
+        const stillConnected = this.presenceService.isConsultantOnline(
+          c.consultantId,
+        );
+        return this.consultantsService.setStatus(
+          c.consultantId,
+          stillConnected ? 'online' : 'offline',
+        );
+      })
+      .catch((e) =>
+        this.logger.warn(`notifyEnded setStatus failed: ${e?.message}`),
+      );
   }
 }
