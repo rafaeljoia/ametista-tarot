@@ -330,7 +330,7 @@ export default function ConsultantChatPage() {
 
   return (
     <main className="min-h-screen bg-ink-900 flex flex-col">
-      <nav className="bg-ink-900/80 backdrop-blur-md border-b border-white/[0.06] px-4 py-3">
+      <nav className="sticky top-0 z-30 bg-ink-900/95 backdrop-blur-md border-b border-white/[0.06] px-4 py-3 shadow-lg shadow-black/20">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
           <Avatar name="Cliente" size="md" />
           <div className="flex-1 min-w-0">
