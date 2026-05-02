@@ -5,9 +5,11 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
+import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import { PresenceService } from '../presence/presence.service';
+import { BillingService } from '../billing/billing.service';
 
 @WebSocketGateway({
   path: '/api/socket.io',
@@ -17,13 +19,20 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
+  private readonly logger = new Logger(ChatGateway.name);
+  private tickIntervals = new Map<string, ReturnType<typeof setInterval>>();
+  private startTimes = new Map<string, number>();
+  private readonly TICK_MS = 60_000;
+  private readonly LOW_CREDITS_THRESHOLD_MIN = 2; // emit warning when < 2 minutes left
+
   constructor(
     private chatService: ChatService,
     private presenceService: PresenceService,
+    private billingService: BillingService,
   ) {}
 
   handleConnection(client: Socket) {
-    console.log(`Conectado: ${client.id}`);
+    this.logger.log(`Conectado: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
@@ -106,6 +115,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       consultationId: consultation.id,
       clientId: data.clientId,
     });
+
+    // Kick off the per-minute billing tick
+    this.startBillingTick(consultation.id);
   }
 
   @SubscribeMessage('decline-call')
@@ -119,14 +131,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('join-consultation')
-  handleJoinConsultation(
+  async handleJoinConsultation(
     client: Socket,
     data: { userId: string; consultationId: string },
   ) {
     client.join(data.consultationId);
     this.presenceService.setUserSocket(data.userId, client.id);
     client.emit('joined', { consultationId: data.consultationId });
-    console.log(`Socket ${client.id} (user ${data.userId}) entrou na sala ${data.consultationId}`);
+    this.logger.log(
+      `Socket ${client.id} (user ${data.userId}) entrou na sala ${data.consultationId}`,
+    );
+
+    // Recover the tick if the server restarted while a consultation is still active
+    const c = await this.billingService.findActive(data.consultationId);
+    if (c && c.status === 'active' && !this.tickIntervals.has(data.consultationId)) {
+      this.startBillingTick(data.consultationId);
+    }
   }
 
   @SubscribeMessage('send-message')
@@ -142,7 +162,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     );
 
     const recipientSocketId = this.presenceService.getUserSocket(data.recipientId);
-    console.log(`Mensagem de ${data.senderId} para ${data.recipientId}, socket destinatário: ${recipientSocketId}`);
 
     if (recipientSocketId) {
       this.server.to(recipientSocketId).emit('message', message);
@@ -161,5 +180,92 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('stop-typing')
   handleStopTyping(client: Socket, data: { consultationId: string; userId: string }) {
     client.to(data.consultationId).emit('user-stop-typing', { userId: data.userId });
+  }
+
+  // -------- Billing helpers --------
+
+  private startBillingTick(consultationId: string) {
+    if (this.tickIntervals.has(consultationId)) return;
+    this.startTimes.set(consultationId, Date.now());
+
+    const tick = async () => {
+      try {
+        const c = await this.billingService.findActive(consultationId);
+        if (!c || c.status !== 'active') {
+          this.stopBillingTick(consultationId);
+          return;
+        }
+
+        const baseStart = c.startedAt
+          ? new Date(c.startedAt).getTime()
+          : this.startTimes.get(consultationId) || Date.now();
+        const elapsedMinutes = Math.max(0, (Date.now() - baseStart) / 60000);
+
+        const result = await this.billingService.chargeForMinutes(
+          consultationId,
+          elapsedMinutes,
+        );
+        if (!result) return;
+
+        this.server.to(consultationId).emit('billing-tick', {
+          consultationId,
+          minutesElapsed: result.minutesElapsed,
+          minutesCharged: result.minutesCharged,
+          creditsRemaining: result.creditsRemaining,
+          costSoFar: result.costSoFar,
+          pricePerMinute: result.pricePerMinute,
+        });
+
+        const minutesLeft =
+          result.pricePerMinute > 0
+            ? result.creditsRemaining / result.pricePerMinute
+            : Number.POSITIVE_INFINITY;
+
+        if (
+          result.creditsRemaining > 0 &&
+          minutesLeft <= this.LOW_CREDITS_THRESHOLD_MIN
+        ) {
+          this.server.to(consultationId).emit('low-credits', {
+            consultationId,
+            creditsRemaining: result.creditsRemaining,
+            minutesLeft: Math.max(0, minutesLeft),
+          });
+        }
+
+        if (result.outOfCredits) {
+          await this.billingService.endConsultation(consultationId, result.minutesElapsed);
+          this.notifyEnded(consultationId, {
+            reason: 'out-of-credits',
+            minutesUsed: result.minutesCharged,
+            creditsUsed: result.costSoFar,
+          });
+        }
+      } catch (err: any) {
+        this.logger.error(`Billing tick failed: ${err?.message}`);
+      }
+    };
+
+    // First tick after one minute, not immediately
+    const interval = setInterval(tick, this.TICK_MS);
+    this.tickIntervals.set(consultationId, interval);
+  }
+
+  private stopBillingTick(consultationId: string) {
+    const t = this.tickIntervals.get(consultationId);
+    if (t) clearInterval(t);
+    this.tickIntervals.delete(consultationId);
+    this.startTimes.delete(consultationId);
+  }
+
+  /** Public so ConsultationsController can broadcast manual end events. */
+  notifyEnded(
+    consultationId: string,
+    payload: { reason: string; minutesUsed: number; creditsUsed: number },
+  ) {
+    this.server.to(consultationId).emit('consultation-ended', {
+      consultationId,
+      ...payload,
+    });
+    this.stopBillingTick(consultationId);
   }
 }

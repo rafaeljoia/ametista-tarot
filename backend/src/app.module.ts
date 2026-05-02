@@ -7,6 +7,8 @@ import { ConsultantsModule } from './consultants/consultants.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ChatModule } from './chat/chat.module';
 import { PresenceModule } from './presence/presence.module';
+import { BillingModule } from './billing/billing.module';
+import { ConsultationsModule } from './consultations/consultations.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseConfig } from './config/database.config';
@@ -20,7 +22,9 @@ import { DatabaseConfig } from './config/database.config';
     UsersModule,
     ConsultantsModule,
     PaymentsModule,
+    BillingModule,
     ChatModule,
+    ConsultationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -5,10 +5,15 @@ import { ChatGateway } from './chat.gateway';
 import { Message } from '../database/entities/message.entity';
 import { Consultation } from '../database/entities/consultation.entity';
 import { PresenceModule } from '../presence/presence.module';
+import { BillingModule } from '../billing/billing.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Message, Consultation]), PresenceModule],
+  imports: [
+    TypeOrmModule.forFeature([Message, Consultation]),
+    PresenceModule,
+    BillingModule,
+  ],
   providers: [ChatService, ChatGateway],
-  exports: [ChatService],
+  exports: [ChatService, ChatGateway],
 })
 export class ChatModule {}

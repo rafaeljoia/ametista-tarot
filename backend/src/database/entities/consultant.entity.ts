@@ -25,6 +25,9 @@ export class Consultant {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 1.0 })
   pricePerMinute: number;
 
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 50 })
+  commissionPercent: number;
+
   @Column({ type: 'decimal', precision: 3, scale: 2, default: 5.0 })
   rating: number;
 

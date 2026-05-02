@@ -1,8 +1,13 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
+import axios from 'axios'
 import { io, Socket } from 'socket.io-client'
+import { Button } from '../../../components/ui/Button'
+import { Modal } from '../../../components/ui/Modal'
+import { Avatar } from '../../../components/ui/Avatar'
+import { Badge } from '../../../components/ui/Badge'
 
 interface Message {
   id?: string
@@ -15,6 +20,15 @@ interface Message {
 interface Consultant {
   id: string
   name: string
+}
+
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+
+function formatMMSS(totalSeconds: number) {
+  const s = Math.max(0, Math.floor(totalSeconds))
+  const mm = Math.floor(s / 60).toString().padStart(2, '0')
+  const ss = (s % 60).toString().padStart(2, '0')
+  return `${mm}:${ss}`
 }
 
 export default function ConsultantChatPage() {
@@ -30,34 +44,44 @@ export default function ConsultantChatPage() {
   const [connected, setConnected] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
 
+  const [seconds, setSeconds] = useState(0)
+  const [earned, setEarned] = useState(0)
+  const [confirmEnd, setConfirmEnd] = useState(false)
+  const [ending, setEnding] = useState(false)
+
   const socketRef = useRef<Socket | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const startedAtRef = useRef<number>(Date.now())
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const endedRef = useRef(false)
 
   useEffect(() => {
     const token = localStorage.getItem('consultant-token')
     const consultantData = localStorage.getItem('consultant')
-
-    if (!token || !consultantData) {
-      router.push('/consultant-login')
-      return
-    }
+    if (!token || !consultantData) { router.push('/consultant-login'); return }
 
     const parsed = JSON.parse(consultantData)
     setConsultant(parsed)
     connectSocket(parsed, token)
 
-    return () => { socketRef.current?.disconnect() }
-  }, [consultationId, router])
+    tickRef.current = setInterval(() => {
+      setSeconds(Math.floor((Date.now() - startedAtRef.current) / 1000))
+    }, 1000)
+
+    return () => {
+      socketRef.current?.disconnect()
+      if (tickRef.current) clearInterval(tickRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [consultationId])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
   const connectSocket = (parsed: Consultant, token: string) => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-    const baseUrl = apiUrl.replace(/\/api$/, '')
-
+    const baseUrl = API.replace(/\/api$/, '')
     const socket = io(baseUrl, {
       path: '/api/socket.io',
       auth: { token },
@@ -100,12 +124,21 @@ export default function ConsultantChatPage() {
     socket.on('user-typing', () => setIsTyping(true))
     socket.on('user-stop-typing', () => setIsTyping(false))
 
+    socket.on('billing-tick', (data: any) => {
+      if (typeof data.costSoFar === 'number') setEarned(data.costSoFar)
+    })
+
+    socket.on('consultation-ended', () => {
+      if (endedRef.current) return
+      endedRef.current = true
+      router.replace(`/consulta/finalizada/${consultationId}?reason=ended&role=consultant`)
+    })
+
     socketRef.current = socket
   }
 
   const handleSend = () => {
     if (!input.trim() || !socketRef.current || !consultant) return
-
     socketRef.current.emit('send-message', {
       consultationId,
       senderId: consultant.id,
@@ -127,81 +160,151 @@ export default function ConsultantChatPage() {
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
+    }
   }
+
+  const endConsultation = useCallback(async () => {
+    if (endedRef.current) return
+    setEnding(true)
+    try {
+      const token = localStorage.getItem('consultant-token')
+      const elapsedMinutes = (Date.now() - startedAtRef.current) / 60000
+      await axios.post(
+        `${API}/consultations/${consultationId}/end`,
+        { elapsedMinutes },
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      endedRef.current = true
+      router.replace(`/consulta/finalizada/${consultationId}?reason=consultant-ended&role=consultant`)
+    } catch (err) {
+      console.error(err)
+      setEnding(false)
+      setConfirmEnd(false)
+    }
+  }, [consultationId, router])
 
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
-      <nav className="bg-slate-900/80 backdrop-blur-md border-b border-purple-500/20 px-4 py-3 flex items-center space-x-4">
-        <button onClick={() => router.push('/consultant-dashboard')} className="text-purple-300 hover:text-white transition">
-          ← Dashboard
-        </button>
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center">
-            <span className="text-lg">👤</span>
+    <main className="min-h-screen bg-mystic-gradient flex flex-col">
+      <nav className="bg-black/30 backdrop-blur-md border-b border-white/10 px-4 py-3">
+        <div className="max-w-4xl mx-auto flex items-center gap-3">
+          <Avatar name="Cliente" emoji="👤" size="md" />
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-semibold truncate">Consulta em andamento</p>
+            <p className="text-mystic-300 text-xs truncate">Atendendo cliente</p>
           </div>
-          <div>
-            <p className="text-white font-semibold">Consulta em andamento</p>
-            <p className="text-purple-300 text-xs">Chat com cliente</p>
+
+          <div className="hidden sm:flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-400'}`} />
+            <span className="text-xs text-ink-200">{connected ? 'Conectado' : 'Reconectando…'}</span>
           </div>
+
+          <div className="flex flex-col items-end ml-2">
+            <span className="font-mono text-lg text-gold-300 tabular-nums leading-none">
+              {formatMMSS(seconds)}
+            </span>
+            <span className="text-[10px] uppercase tracking-wider text-ink-300">em chamada</span>
+          </div>
+
+          <Button size="sm" variant="danger" onClick={() => setConfirmEnd(true)} className="ml-2">
+            Encerrar
+          </Button>
         </div>
-        <div className="ml-auto flex items-center space-x-2">
-          <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-400' : 'bg-red-400'}`} />
-          <span className="text-xs text-purple-300">{connected ? 'Conectado' : 'Desconectado'}</span>
+
+        <div className="max-w-4xl mx-auto mt-2 flex flex-wrap items-center gap-2 text-xs">
+          <Badge variant="gold">Receita bruta: R$ {earned.toFixed(2)}</Badge>
         </div>
       </nav>
 
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 max-w-3xl w-full mx-auto">
-        {messages.length === 0 && (
-          <div className="text-center py-12">
-            <span className="text-5xl">💬</span>
-            <p className="text-purple-200 mt-4">Aguardando mensagem do cliente...</p>
-          </div>
-        )}
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.isOwn ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${msg.isOwn ? 'bg-purple-600 text-white rounded-br-sm' : 'bg-slate-700 text-purple-100 rounded-bl-sm'}`}>
-              <p className="text-sm">{msg.content}</p>
-              <p className={`text-xs mt-1 ${msg.isOwn ? 'text-purple-300' : 'text-slate-400'}`}>{formatTime(msg.createdAt)}</p>
+      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-3">
+        <div className="max-w-3xl mx-auto space-y-3">
+          {messages.length === 0 && (
+            <div className="text-center py-12">
+              <span className="text-5xl">💬</span>
+              <p className="text-ink-100 mt-4 font-display text-lg">
+                Aguardando mensagem do cliente…
+              </p>
             </div>
-          </div>
-        ))}
-        {isTyping && (
-          <div className="flex justify-start">
-            <div className="bg-slate-700 px-4 py-2 rounded-2xl rounded-bl-sm">
-              <div className="flex space-x-1">
-                {[0, 150, 300].map((d) => (
-                  <span key={d} className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
-                ))}
+          )}
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.isOwn ? 'justify-end' : 'justify-start'}`}>
+              <div
+                className={[
+                  'max-w-[80%] sm:max-w-md px-4 py-2 rounded-2xl shadow',
+                  msg.isOwn
+                    ? 'bg-mystic-600 text-white rounded-br-sm'
+                    : 'bg-white/10 text-ink-100 rounded-bl-sm border border-white/10',
+                ].join(' ')}
+              >
+                <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                <p
+                  className={`text-[10px] mt-1 ${
+                    msg.isOwn ? 'text-mystic-200/80' : 'text-ink-300'
+                  }`}
+                >
+                  {formatTime(msg.createdAt)}
+                </p>
               </div>
             </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+          ))}
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="bg-white/10 border border-white/10 px-4 py-2 rounded-2xl rounded-bl-sm">
+                <div className="flex space-x-1">
+                  {[0, 150, 300].map((d) => (
+                    <span
+                      key={d}
+                      className="w-2 h-2 bg-mystic-300 rounded-full animate-bounce"
+                      style={{ animationDelay: `${d}ms` }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
-      <div className="bg-slate-900/80 backdrop-blur-md border-t border-purple-500/20 px-4 py-4">
+      <div className="bg-black/30 backdrop-blur-md border-t border-white/10 px-4 py-4">
         <div className="max-w-3xl mx-auto flex space-x-3">
           <input
             type="text"
             value={input}
             onChange={(e) => handleTyping(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Digite sua resposta..."
-            className="flex-1 px-4 py-2 bg-slate-700 border border-purple-500/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
+            placeholder="Digite sua resposta…"
+            className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-ink-300 focus:outline-none focus:border-mystic-400 transition"
           />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || !connected}
-            className="px-5 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 text-white rounded-xl transition font-semibold"
-          >
+          <Button onClick={handleSend} disabled={!input.trim() || !connected}>
             Enviar
-          </button>
+          </Button>
         </div>
       </div>
+
+      <Modal
+        open={confirmEnd}
+        onClose={() => (ending ? null : setConfirmEnd(false))}
+        title="Encerrar consulta?"
+      >
+        <p className="text-ink-200">
+          A consulta está há {formatMMSS(seconds)} em andamento. Tem certeza que
+          deseja encerrar?
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setConfirmEnd(false)} disabled={ending}>
+            Continuar
+          </Button>
+          <Button variant="danger" loading={ending} onClick={endConsultation}>
+            Encerrar agora
+          </Button>
+        </div>
+      </Modal>
     </main>
   )
 }
