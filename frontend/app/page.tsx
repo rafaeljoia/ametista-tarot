@@ -22,7 +22,7 @@ interface Consultant {
 
 // Calm, neutral imagery — Unsplash editorial photography.
 const HERO_PHOTO =
-  'https://images.unsplash.com/photo-1551845728-6820a30c64e1?auto=format&fit=crop&w=1400&q=80'
+  'https://images.unsplash.com/photo-1518128958364-65859d70aa41?auto=format&fit=crop&w=1400&q=80'
 
 export default function Home() {
   const [consultants, setConsultants] = useState<Consultant[]>([])

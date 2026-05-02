@@ -10,7 +10,7 @@ import { Button } from '../../components/ui/Button'
 import { Alert } from '../../components/ui/Alert'
 
 const AUTH_PHOTO =
-  'https://images.unsplash.com/photo-1518551933037-91b2f5f229cc?auto=format&fit=crop&w=1400&q=80'
+  'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=1400&q=80'
 
 export default function LoginPage() {
   const router = useRouter()
