@@ -9,6 +9,10 @@ import { Modal } from '../../../components/ui/Modal'
 import { Avatar } from '../../../components/ui/Avatar'
 import { Badge } from '../../../components/ui/Badge'
 import { Alert } from '../../../components/ui/Alert'
+import { EmojiPicker } from '../../../components/ui/EmojiPicker'
+import { Lightbox } from '../../../components/ui/Lightbox'
+
+type MsgType = 'text' | 'image'
 
 interface Message {
   id?: string
@@ -16,6 +20,8 @@ interface Message {
   senderId: string
   createdAt: string
   isOwn: boolean
+  type: MsgType
+  mediaUrl?: string | null
 }
 
 interface Consultant {
@@ -33,12 +39,19 @@ interface User {
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+const API_BASE = API.replace(/\/api$/, '')
 
 function formatMMSS(totalSeconds: number) {
   const s = Math.max(0, Math.floor(totalSeconds))
   const mm = Math.floor(s / 60).toString().padStart(2, '0')
   const ss = (s % 60).toString().padStart(2, '0')
   return `${mm}:${ss}`
+}
+
+function absoluteMediaUrl(url?: string | null) {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return `${API_BASE}${url}`
 }
 
 export default function ChatPage() {
@@ -55,8 +68,11 @@ export default function ChatPage() {
   const [connected, setConnected] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [emojiOpen, setEmojiOpen] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
 
-  // Billing state
   const [seconds, setSeconds] = useState(0)
   const [credits, setCredits] = useState<number | null>(null)
   const [costSoFar, setCostSoFar] = useState(0)
@@ -66,9 +82,11 @@ export default function ChatPage() {
 
   const socketRef = useRef<Socket | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const consultationId = useRef<string>('')
   const startedAtRef = useRef<number>(Date.now())
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const peerTypingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const endedRef = useRef(false)
 
@@ -83,8 +101,6 @@ export default function ChatPage() {
     consultationId.current = consultationIdFromUrl || `${parsedUser.id}-${consultantId}`
 
     fetchConsultant(token)
-    // Hydrate timer base from the server's startedAt so reloads/reconnects
-    // don't reset MM:SS to 00:00.
     if (consultationIdFromUrl) {
       axios
         .get(`${API}/consultations/${consultationIdFromUrl}`, {
@@ -113,6 +129,7 @@ export default function ChatPage() {
     return () => {
       socketRef.current?.disconnect()
       if (tickRef.current) clearInterval(tickRef.current)
+      if (peerTypingTimeout.current) clearTimeout(peerTypingTimeout.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [consultantId, consultationIdFromUrl])
@@ -134,9 +151,14 @@ export default function ChatPage() {
     }
   }
 
+  const triggerPeerTyping = () => {
+    setIsTyping(true)
+    if (peerTypingTimeout.current) clearTimeout(peerTypingTimeout.current)
+    peerTypingTimeout.current = setTimeout(() => setIsTyping(false), 3000)
+  }
+
   const connectSocket = (parsedUser: User, token: string) => {
-    const baseUrl = API.replace(/\/api$/, '')
-    const socket = io(baseUrl, {
+    const socket = io(API_BASE, {
       path: '/api/socket.io',
       auth: { token },
       transports: ['websocket', 'polling'],
@@ -161,25 +183,21 @@ export default function ChatPage() {
           senderId: msg.senderId,
           createdAt: msg.createdAt || new Date().toISOString(),
           isOwn: false,
+          type: (msg.type as MsgType) || 'text',
+          mediaUrl: msg.mediaUrl || null,
         },
       ])
     })
 
-    socket.on('message-sent', (msg: any) => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: msg.id,
-          content: msg.tempId,
-          senderId: parsedUser.id,
-          createdAt: new Date().toISOString(),
-          isOwn: true,
-        },
-      ])
+    socket.on('message-sent', () => {
+      // Já adicionamos otimisticamente; aqui poderíamos sincronizar IDs.
     })
 
-    socket.on('user-typing', () => setIsTyping(true))
-    socket.on('user-stop-typing', () => setIsTyping(false))
+    socket.on('user-typing', () => triggerPeerTyping())
+    socket.on('user-stop-typing', () => {
+      if (peerTypingTimeout.current) clearTimeout(peerTypingTimeout.current)
+      setIsTyping(false)
+    })
 
     socket.on('billing-tick', (data: any) => {
       if (typeof data.creditsRemaining === 'number') setCredits(data.creditsRemaining)
@@ -188,6 +206,10 @@ export default function ChatPage() {
 
     socket.on('low-credits', (data: any) => {
       setLowCredits({ minutesLeft: Number(data.minutesLeft || 0) })
+    })
+
+    socket.on('send-error', (data: any) => {
+      setUploadError(`Falha ao enviar: ${data?.reason || 'erro desconhecido'}`)
     })
 
     socket.on('consultation-ended', (data: any) => {
@@ -199,19 +221,79 @@ export default function ChatPage() {
     socketRef.current = socket
   }
 
+  const pushOwnMessage = (msg: Omit<Message, 'isOwn'>) => {
+    setMessages((prev) => [...prev, { ...msg, isOwn: true }])
+  }
+
   const handleSend = () => {
     if (!input.trim() || !socketRef.current || !user) return
+    const content = input.trim()
     socketRef.current.emit('send-message', {
       consultationId: consultationId.current,
       senderId: user.id,
       recipientId: consultantId,
-      content: input.trim(),
+      content,
+      type: 'text',
     })
     socketRef.current.emit('stop-typing', {
       consultationId: consultationId.current,
       userId: user.id,
     })
+    pushOwnMessage({
+      content,
+      senderId: user.id,
+      createdAt: new Date().toISOString(),
+      type: 'text',
+    })
     setInput('')
+  }
+
+  const handleFile = async (file: File | undefined) => {
+    setUploadError(null)
+    if (!file || !socketRef.current || !user) return
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('Imagem maior que 5MB. Tente uma menor.')
+      return
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setUploadError('Formato não suportado (use JPG, PNG ou WEBP).')
+      return
+    }
+    setUploading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const fd = new FormData()
+      fd.append('file', file)
+      const r = await axios.post(`${API}/uploads/chat-image`, fd, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      const url = r.data?.url as string
+      if (!url) throw new Error('URL ausente')
+
+      socketRef.current.emit('send-message', {
+        consultationId: consultationId.current,
+        senderId: user.id,
+        recipientId: consultantId,
+        content: '',
+        type: 'image',
+        mediaUrl: url,
+      })
+      pushOwnMessage({
+        content: '',
+        senderId: user.id,
+        createdAt: new Date().toISOString(),
+        type: 'image',
+        mediaUrl: url,
+      })
+    } catch (err: any) {
+      setUploadError(err?.response?.data?.message || 'Falha no envio da imagem.')
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
   }
 
   const handleTyping = (value: string) => {
@@ -242,7 +324,6 @@ export default function ChatPage() {
     setEnding(true)
     try {
       const token = localStorage.getItem('token')
-      // Server computes elapsed time from its own startedAt — no client input.
       await axios.post(
         `${API}/consultations/${consultationId.current}/end`,
         {},
@@ -270,7 +351,6 @@ export default function ChatPage() {
 
   return (
     <main className="min-h-screen bg-mystic-gradient flex flex-col">
-      {/* Top bar with timer + credits */}
       <nav className="bg-black/30 backdrop-blur-md border-b border-white/10 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
           <Avatar name={consultant?.name || 'C'} emoji="🔮" size="md" />
@@ -279,8 +359,9 @@ export default function ChatPage() {
               {consultant?.name || 'Consultor'}
             </p>
             <p className="text-mystic-300 text-xs truncate">
-              {consultant?.specialty} · R${' '}
-              {Number(consultant?.pricePerMinute || 0).toFixed(2)}/min
+              {isTyping
+                ? 'digitando…'
+                : `${consultant?.specialty} · R$ ${Number(consultant?.pricePerMinute || 0).toFixed(2)}/min`}
             </p>
           </div>
 
@@ -316,7 +397,6 @@ export default function ChatPage() {
         </div>
       </nav>
 
-      {/* Low-credits warning */}
       {lowCredits && credits !== null && credits > 0 && (
         <div className="px-4 pt-3">
           <div className="max-w-4xl mx-auto">
@@ -329,7 +409,6 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-3">
         <div className="max-w-3xl mx-auto space-y-3">
           {messages.length === 0 && (
@@ -353,7 +432,23 @@ export default function ChatPage() {
                     : 'bg-white/10 text-ink-100 rounded-bl-sm border border-white/10',
                 ].join(' ')}
               >
-                <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                {msg.type === 'image' && msg.mediaUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => setLightboxSrc(absoluteMediaUrl(msg.mediaUrl))}
+                    className="block"
+                    aria-label="Ampliar imagem"
+                  >
+                    <img
+                      src={absoluteMediaUrl(msg.mediaUrl)}
+                      alt="Imagem enviada"
+                      className="max-w-full rounded-lg max-h-64 object-cover"
+                      loading="lazy"
+                    />
+                  </button>
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                )}
                 <p
                   className={`text-[10px] mt-1 ${
                     msg.isOwn ? 'text-mystic-200/80' : 'text-ink-300'
@@ -383,20 +478,65 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Composer */}
       <div className="bg-black/30 backdrop-blur-md border-t border-white/10 px-4 py-4">
-        <div className="max-w-3xl mx-auto flex space-x-3">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => handleTyping(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Digite sua mensagem…"
-            className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-ink-300 focus:outline-none focus:border-mystic-400 transition"
-          />
-          <Button onClick={handleSend} disabled={!input.trim() || !connected}>
-            Enviar
-          </Button>
+        <div className="max-w-3xl mx-auto">
+          {uploadError && (
+            <p className="text-xs text-red-300 mb-2">{uploadError}</p>
+          )}
+          <div className="relative flex items-end gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => handleFile(e.target.files?.[0])}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || !connected}
+              className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-ink-200 hover:text-white hover:border-white/20 disabled:opacity-50 transition shrink-0"
+              title="Anexar imagem"
+              aria-label="Anexar imagem"
+            >
+              {uploading ? (
+                <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              ) : (
+                <PaperclipIcon />
+              )}
+            </button>
+
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setEmojiOpen((v) => !v)}
+                className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-ink-200 hover:text-white hover:border-white/20 transition"
+                title="Inserir emoji"
+                aria-label="Inserir emoji"
+              >
+                <SmileIcon />
+              </button>
+              <EmojiPicker
+                open={emojiOpen}
+                onSelect={(e) => {
+                  setInput((v) => v + e)
+                }}
+                onClose={() => setEmojiOpen(false)}
+              />
+            </div>
+
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => handleTyping(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Digite sua mensagem…"
+              className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-ink-300 focus:outline-none focus:border-mystic-400 transition"
+            />
+            <Button onClick={handleSend} disabled={!input.trim() || !connected}>
+              Enviar
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -418,6 +558,27 @@ export default function ChatPage() {
           </Button>
         </div>
       </Modal>
+
+      <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
     </main>
+  )
+}
+
+function PaperclipIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 17.99 8.84l-8.57 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+    </svg>
+  )
+}
+
+function SmileIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+      <line x1="9" y1="9" x2="9.01" y2="9" />
+      <line x1="15" y1="9" x2="15.01" y2="9" />
+    </svg>
   )
 }

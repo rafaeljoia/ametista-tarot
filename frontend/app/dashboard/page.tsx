@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useState, useRef, useMemo } from 'react'
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import axios from 'axios'
 import { io, Socket } from 'socket.io-client'
 import { Navbar } from '../../components/Navbar'
@@ -34,6 +33,8 @@ interface User {
 type FilterMode = 'all' | 'online'
 type SortMode = 'rating' | 'price-asc' | 'price-desc' | 'consultations'
 
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
@@ -42,6 +43,9 @@ export default function DashboardPage() {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<FilterMode>('all')
   const [sort, setSort] = useState<SortMode>('rating')
+  const [alertedIds, setAlertedIds] = useState<Set<string>>(new Set())
+  const [pendingAlertId, setPendingAlertId] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
   const socketRef = useRef<Socket | null>(null)
 
   useEffect(() => {
@@ -51,21 +55,24 @@ export default function DashboardPage() {
     if (userData) setUser(JSON.parse(userData))
 
     fetchConsultants(token)
+    fetchActiveAlerts(token)
     connectPresence(token)
 
     return () => { socketRef.current?.disconnect() }
   }, [router])
 
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 3500)
+    return () => clearTimeout(t)
+  }, [toast])
+
   const fetchConsultants = async (token: string) => {
     try {
       const [list, online] = await Promise.all([
-        axios.get(`${process.env.NEXT_PUBLIC_API_URL}/consultants`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        axios.get(`${API}/consultants`, { headers: { Authorization: `Bearer ${token}` } }),
         axios
-          .get(`${process.env.NEXT_PUBLIC_API_URL}/consultants/online`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
+          .get(`${API}/consultants/online`, { headers: { Authorization: `Bearer ${token}` } })
           .catch(() => ({ data: { ids: [] } })),
       ])
       const onlineIds: string[] = online.data.ids || []
@@ -79,9 +86,20 @@ export default function DashboardPage() {
     }
   }
 
+  const fetchActiveAlerts = async (token: string) => {
+    try {
+      // Endpoint enxuto: poderíamos chamar GET por consultor; aqui aproveitamos
+      // o status individual lazy via toggle. Mantemos um set local que cresce
+      // conforme o usuário ativa alertas.
+      // (Sem chamada inicial para evitar N requests; o estado começa vazio.)
+      void token
+    } catch {
+      // ignore
+    }
+  }
+
   const connectPresence = (token: string) => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-    const baseUrl = apiUrl.replace(/\/api$/, '')
+    const baseUrl = API.replace(/\/api$/, '')
     const socket = io(baseUrl, {
       path: '/api/socket.io',
       auth: { token },
@@ -94,10 +112,44 @@ export default function DashboardPage() {
     })
     socket.on('consultant-status', ({ consultantId, isOnline }: { consultantId: string; isOnline: boolean }) => {
       setConsultants((prev) => prev.map((c) => (c.id === consultantId ? { ...c, isOnline } : c)))
+      if (isOnline) {
+        // Se eu tinha alerta ativo, remove (foi notificado server-side).
+        setAlertedIds((prev) => {
+          if (!prev.has(consultantId)) return prev
+          const next = new Set(prev)
+          next.delete(consultantId)
+          return next
+        })
+      }
     })
 
     socketRef.current = socket
   }
+
+  const requestNotifyMe = useCallback(async (consultantId: string) => {
+    setPendingAlertId(consultantId)
+    try {
+      const token = localStorage.getItem('token')
+      const r = await axios.post(
+        `${API}/consultants/${consultantId}/notify-me`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      if (r.data?.alreadyOnline) {
+        setToast('Esse consultor já está online. Inicie a chamada agora.')
+      } else if (r.data?.alreadyActive) {
+        setAlertedIds((prev) => new Set(prev).add(consultantId))
+        setToast('Você já tem um aviso ativo para esse consultor.')
+      } else {
+        setAlertedIds((prev) => new Set(prev).add(consultantId))
+        setToast('Avisaremos por e-mail quando ele(a) ficar disponível.')
+      }
+    } catch (err: any) {
+      setToast(err?.response?.data?.message || 'Não foi possível registrar o aviso.')
+    } finally {
+      setPendingAlertId(null)
+    }
+  }, [])
 
   const filtered = useMemo(() => {
     let list = [...consultants]
@@ -136,7 +188,6 @@ export default function DashboardPage() {
       <Navbar variant="client" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Greeting + credits hero */}
         <div className="grid lg:grid-cols-3 gap-5 mb-10">
           <Card variant="elevated" className="lg:col-span-2 p-7">
             <p className="text-ink-200/80 text-sm">Olá,</p>
@@ -167,7 +218,6 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Filters */}
         <Card className="p-4 mb-6">
           <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
             <div className="flex-1">
@@ -201,7 +251,6 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        {/* Grid */}
         {filtered.length === 0 ? (
           <Card className="p-14 text-center">
             <div className="text-5xl mb-3">🔮</div>
@@ -211,11 +260,24 @@ export default function DashboardPage() {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filtered.map((c) => (
-              <ConsultantCard key={c.id} c={c} hasCredits={Number(user?.credits ?? 0) > 0} />
+              <ConsultantCard
+                key={c.id}
+                c={c}
+                hasCredits={Number(user?.credits ?? 0) > 0}
+                alerted={alertedIds.has(c.id)}
+                pendingAlert={pendingAlertId === c.id}
+                onNotifyMe={() => requestNotifyMe(c.id)}
+              />
             ))}
           </div>
         )}
       </div>
+
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-ink-900/95 border border-white/10 text-white px-5 py-3 rounded-xl shadow-2xl text-sm max-w-md text-center">
+          {toast}
+        </div>
+      )}
     </main>
   )
 }
@@ -244,7 +306,19 @@ function FilterChip({
   )
 }
 
-function ConsultantCard({ c, hasCredits }: { c: Consultant; hasCredits: boolean }) {
+function ConsultantCard({
+  c,
+  hasCredits,
+  alerted,
+  pendingAlert,
+  onNotifyMe,
+}: {
+  c: Consultant
+  hasCredits: boolean
+  alerted: boolean
+  pendingAlert: boolean
+  onNotifyMe: () => void
+}) {
   return (
     <Card hoverable className="p-6 flex flex-col">
       <div className="flex items-start gap-4">
@@ -285,9 +359,18 @@ function ConsultantCard({ c, hasCredits }: { c: Consultant; hasCredits: boolean 
           >
             {hasCredits ? '📞 Chamar' : 'Comprar créditos'}
           </LinkButton>
-        ) : (
+        ) : alerted ? (
           <Button variant="ghost" size="sm" disabled>
-            Indisponível
+            ✓ Aviso ativo
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onNotifyMe}
+            loading={pendingAlert}
+          >
+            Avise-me
           </Button>
         )}
       </div>

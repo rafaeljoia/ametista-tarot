@@ -3,6 +3,8 @@ import { User } from './user.entity';
 import { Consultant } from './consultant.entity';
 import { Consultation } from './consultation.entity';
 
+export type MessageType = 'text' | 'image' | 'audio';
+
 @Entity('messages')
 export class Message {
   @PrimaryGeneratedColumn('uuid')
@@ -21,7 +23,13 @@ export class Message {
   content: string;
 
   @Column({ enum: ['text', 'image', 'audio'], default: 'text' })
-  type: string;
+  type: MessageType;
+
+  /**
+   * URL pública da mídia anexada (imagens/áudio). Para mensagens 'text' fica null.
+   */
+  @Column({ type: 'text', nullable: true })
+  mediaUrl: string | null;
 
   @Column({ default: false })
   isRead: boolean;

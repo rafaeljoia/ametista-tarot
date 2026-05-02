@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Message } from '../database/entities/message.entity';
+import { Message, MessageType } from '../database/entities/message.entity';
 import { Consultation } from '../database/entities/consultation.entity';
 
 @Injectable()
@@ -18,7 +18,8 @@ export class ChatService {
     senderId: string,
     recipientId: string,
     content: string,
-    type: 'text' | 'image' | 'audio' = 'text',
+    type: MessageType = 'text',
+    mediaUrl: string | null = null,
   ) {
     const message = this.messagesRepository.create({
       consultationId,
@@ -26,6 +27,7 @@ export class ChatService {
       recipientId,
       content,
       type,
+      mediaUrl,
     });
 
     return this.messagesRepository.save(message);

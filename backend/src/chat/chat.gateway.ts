@@ -11,6 +11,9 @@ import * as jwt from 'jsonwebtoken';
 import { ChatService } from './chat.service';
 import { PresenceService } from '../presence/presence.service';
 import { BillingService } from '../billing/billing.service';
+import { AvailabilityAlertService } from '../notifications/availability-alert.service';
+
+type IncomingMessageType = 'text' | 'image';
 
 interface SocketIdentity {
   sub: string;
@@ -35,6 +38,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private chatService: ChatService,
     private presenceService: PresenceService,
     private billingService: BillingService,
+    private availabilityAlerts: AvailabilityAlertService,
   ) {}
 
   /** Verify the JWT presented at handshake time and bind identity to socket.data. */
@@ -84,13 +88,28 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('consultant-online')
-  handleConsultantOnline(client: Socket, data: { consultantId: string }) {
+  async handleConsultantOnline(client: Socket, data: { consultantId: string }) {
     const id = this.getIdentity(client);
     const consultantId = id?.role === 'consultant' ? id.sub : data.consultantId;
     if (!consultantId) return;
+
+    const wasOnline = this.presenceService.isConsultantOnline(consultantId);
     this.presenceService.setConsultantOnline(consultantId, client.id);
     client.join(`consultant:${consultantId}`);
     this.server.emit('consultant-status', { consultantId, isOnline: true });
+
+    // Disparo de notificações por e-mail somente em transições offline→online
+    // para evitar spam quando o consultor reconecta o socket.
+    if (!wasOnline) {
+      try {
+        const sent = await this.availabilityAlerts.dispatchForConsultantOnline(consultantId);
+        if (sent > 0) {
+          this.logger.log(`Notificações enviadas para ${sent} usuário(s) (consultor ${consultantId} online)`);
+        }
+      } catch (err: any) {
+        this.logger.error(`Falha ao despachar alertas: ${err?.message}`);
+      }
+    }
   }
 
   @SubscribeMessage('get-online-consultants')
@@ -194,18 +213,39 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('send-message')
   async handleSendMessage(
     client: Socket,
-    data: { consultationId: string; senderId: string; recipientId: string; content: string },
+    data: {
+      consultationId: string;
+      senderId: string;
+      recipientId: string;
+      content: string;
+      type?: IncomingMessageType;
+      mediaUrl?: string | null;
+    },
   ) {
     const id = this.getIdentity(client);
     // If we know who the socket is, force the senderId to match the JWT subject.
     const senderId = id ? id.sub : data.senderId;
-    if (!senderId || !data.consultationId || !data.recipientId || !data.content) return;
+    if (!senderId || !data.consultationId || !data.recipientId) return;
+
+    const type: IncomingMessageType = data.type === 'image' ? 'image' : 'text';
+    const mediaUrl = type === 'image' ? (data.mediaUrl || '').trim() : null;
+
+    if (type === 'text' && !data.content?.trim()) return;
+    if (type === 'image') {
+      // Apenas aceita URLs servidas pela própria API (multer escreveu em /api/uploads/chat/...)
+      if (!mediaUrl || !mediaUrl.startsWith('/api/uploads/chat/')) {
+        client.emit('send-error', { reason: 'invalid-media-url' });
+        return;
+      }
+    }
 
     const message = await this.chatService.saveMessage(
       data.consultationId,
       senderId,
       data.recipientId,
-      data.content,
+      data.content || '',
+      type,
+      mediaUrl,
     );
 
     const recipientSocketId = this.presenceService.getUserSocket(data.recipientId);

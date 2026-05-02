@@ -13,6 +13,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ConsultantsService } from './consultants.service';
 import { PresenceService } from '../presence/presence.service';
+import { AvailabilityAlertService } from '../notifications/availability-alert.service';
 
 // Public-safe shape for consultant data — never includes email, password, or internal flags.
 function toPublic(c: any, isOnline?: boolean) {
@@ -35,6 +36,7 @@ export class ConsultantsController {
   constructor(
     private consultantsService: ConsultantsService,
     private presenceService: PresenceService,
+    private availabilityAlerts: AvailabilityAlertService,
   ) {}
 
   @Get('online')
@@ -100,6 +102,25 @@ export class ConsultantsController {
   @Get(':id/stats')
   async getStats(@Param('id') id: string) {
     return this.consultantsService.getStats(id);
+  }
+
+  @Post(':id/notify-me')
+  @UseGuards(AuthGuard('jwt'))
+  async requestNotifyMe(@Param('id') id: string, @Request() req) {
+    if (req.user.role !== 'user') throw new ForbiddenException();
+    // Não faz sentido se o consultor já está online — informa cliente.
+    const isOnline = this.presenceService.isConsultantOnline(id);
+    if (isOnline) {
+      return { ok: true, alreadyOnline: true };
+    }
+    return this.availabilityAlerts.requestAlert(req.user.id, id);
+  }
+
+  @Get(':id/notify-me')
+  @UseGuards(AuthGuard('jwt'))
+  async getNotifyMeStatus(@Param('id') id: string, @Request() req) {
+    if (req.user.role !== 'user') throw new ForbiddenException();
+    return this.availabilityAlerts.getStatusForUser(req.user.id, id);
   }
 
   @Get(':id')

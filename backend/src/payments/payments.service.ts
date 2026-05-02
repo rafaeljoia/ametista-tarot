@@ -11,7 +11,7 @@ import { Credit } from '../database/entities/credit.entity';
 import { User } from '../database/entities/user.entity';
 import { CREDIT_PACKAGES, findPackage } from './credit-packages';
 import { MercadoPagoService } from './mercado-pago.service';
-import { EmailService } from './email.service';
+import { MailService } from '../mail/mail.service';
 
 interface CreatePixArgs {
   userId: string;
@@ -40,7 +40,7 @@ export class PaymentsService {
     @InjectRepository(User)
     private usersRepo: Repository<User>,
     private mercadoPago: MercadoPagoService,
-    private email: EmailService,
+    private mail: MailService,
   ) {}
 
   listPackages() {
@@ -293,7 +293,7 @@ export class PaymentsService {
     if (creditedNow && userIdToNotify) {
       const user = await this.usersRepo.findOne({ where: { id: userIdToNotify } });
       if (user) {
-        await this.email.sendPaymentConfirmation({
+        await this.mail.sendPaymentConfirmation({
           to: user.email,
           name: user.name,
           gross,

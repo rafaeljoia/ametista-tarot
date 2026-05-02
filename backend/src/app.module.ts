@@ -9,6 +9,9 @@ import { ChatModule } from './chat/chat.module';
 import { PresenceModule } from './presence/presence.module';
 import { BillingModule } from './billing/billing.module';
 import { ConsultationsModule } from './consultations/consultations.module';
+import { UploadsModule } from './uploads/uploads.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { MailModule } from './mail/mail.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseConfig } from './config/database.config';
@@ -17,14 +20,17 @@ import { DatabaseConfig } from './config/database.config';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     TypeOrmModule.forRoot(DatabaseConfig()),
+    MailModule,
     PresenceModule,
     AuthModule,
     UsersModule,
     ConsultantsModule,
     PaymentsModule,
     BillingModule,
+    NotificationsModule,
     ChatModule,
     ConsultationsModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
