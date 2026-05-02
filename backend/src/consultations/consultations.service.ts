@@ -41,7 +41,9 @@ export class ConsultationsService {
         ? await this.usersRepo.findByIds(counterpartIds)
         : await this.consultantsRepo.findByIds(counterpartIds);
 
-    const map = new Map<string, any>(counterparts.map((c) => [c.id, c]));
+    const map = new Map<string, any>(
+      counterparts.map((c) => [c.id, c] as [string, any]),
+    );
 
     return items.map((c) => {
       const other =
