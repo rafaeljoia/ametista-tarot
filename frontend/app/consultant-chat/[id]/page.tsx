@@ -352,13 +352,11 @@ export default function ConsultantChatPage() {
             <span className="text-[10px] uppercase tracking-wider text-ink-300">em chamada</span>
           </div>
 
-          <Button size="sm" variant="danger" onClick={() => setConfirmEnd(true)} className="ml-2">
-            Encerrar
-          </Button>
+          {/* Consultor não pode encerrar — apenas o cliente. */}
         </div>
 
         <div className="max-w-4xl mx-auto mt-2 flex flex-wrap items-center gap-2 text-xs">
-          <Badge variant="gold">Receita bruta: R$ {earned.toFixed(2)}</Badge>
+          <Badge variant="gold">Ganho atual: R$ {earned.toFixed(2)}</Badge>
         </div>
       </nav>
 
@@ -486,25 +484,6 @@ export default function ConsultantChatPage() {
           </div>
         </div>
       </div>
-
-      <Modal
-        open={confirmEnd}
-        onClose={() => (ending ? null : setConfirmEnd(false))}
-        title="Encerrar consulta?"
-      >
-        <p className="text-ink-200">
-          A consulta está há {formatMMSS(seconds)} em andamento. Tem certeza que
-          deseja encerrar?
-        </p>
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="ghost" onClick={() => setConfirmEnd(false)} disabled={ending}>
-            Continuar
-          </Button>
-          <Button variant="danger" loading={ending} onClick={endConsultation}>
-            Encerrar agora
-          </Button>
-        </div>
-      </Modal>
 
       <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
     </main>

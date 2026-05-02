@@ -5,6 +5,7 @@ import {
   Param,
   Request,
   UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConsultationsService } from './consultations.service';
@@ -32,6 +33,14 @@ export class ConsultationsController {
 
   @Post(':id/end')
   async end(@Request() req, @Param('id') id: string) {
+    // Business rule: only the client may end a consultation. Consultants are
+    // not allowed to terminate the call from their side — they must wait for
+    // the client to end (or for credits to run out, which auto-ends).
+    if (req.user.role === 'consultant') {
+      throw new ForbiddenException(
+        'Apenas o cliente pode encerrar a consulta.',
+      );
+    }
     // Authorization: only the client or the consultant of the call can end it.
     await this.consultations.ensureCanEnd(req.user.role, req.user.id, id);
 
