@@ -131,7 +131,7 @@ export default function ConsultorPedidosPage() {
         <div>
           <h1 className="text-2xl font-display text-white">Pedidos de banhos / orações</h1>
           <p className="text-ink-300 text-sm mt-1">
-            Quando um cliente solicita uma oferenda, ela aparece aqui. Escreva a entrega e clique em Enviar — o cliente recebe por e-mail e na caixa de entrada da plataforma.
+            Quando um cliente solicita uma orientação, ela aparece aqui. Escreva a entrega e clique em Enviar — o cliente recebe por e-mail e na caixa de entrada da plataforma.
           </p>
         </div>
 
@@ -217,7 +217,7 @@ export default function ConsultorPedidosPage() {
               </div>
             )}
             <label className="block text-sm text-ink-200 mb-1">
-              Texto da {KIND_LABEL[delivering.kind] || 'oferenda'}
+              Texto da {KIND_LABEL[delivering.kind] || 'orientação'}
             </label>
             <textarea
               rows={10}

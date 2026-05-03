@@ -82,7 +82,7 @@ export default function InboxPage() {
           <div>
             <h1 className="text-2xl font-display text-white">Caixa de entrada</h1>
             <p className="text-ink-300 text-sm mt-1">
-              Mensagens da plataforma — entregas de oferendas, avisos, etc.
+              Mensagens da plataforma — entregas de orientações, avisos, etc.
             </p>
           </div>
           {unread > 0 && (

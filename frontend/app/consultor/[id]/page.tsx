@@ -281,7 +281,7 @@ export default function ConsultantProfilePage() {
                     🌿 Pedir banho ou oração mesmo assim
                   </Button>
                   <p className="text-xs text-ink-300 text-center">
-                    Você pode pedir uma oferenda mesmo com o(a) consultor(a) offline — ela tem um prazo para preparar e enviar.
+                    Você pode pedir uma orientação mesmo com o(a) consultor(a) offline — ela tem um prazo para preparar e enviar.
                   </p>
                 </div>
               )

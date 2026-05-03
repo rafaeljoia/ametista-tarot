@@ -54,7 +54,7 @@ export default function MinhasOferendasPage() {
     axios
       .get(`${API}/me/service-orders`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => setItems(r.data?.items || []))
-      .catch((e) => setError(e.response?.data?.message || 'Erro ao carregar oferendas'))
+      .catch((e) => setError(e.response?.data?.message || 'Erro ao carregar orientações'))
       .finally(() => setLoading(false))
   }, [router])
 
@@ -67,14 +67,14 @@ export default function MinhasOferendasPage() {
     return `restam ${h}h ${m}m`
   }
 
-  if (loading) return <PageLoader label="Carregando oferendas…" />
+  if (loading) return <PageLoader label="Carregando orientações…" />
 
   return (
     <div className="min-h-screen bg-ink-900">
       <Navbar variant="client" />
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         <div>
-          <h1 className="text-2xl font-display text-white">Minhas oferendas</h1>
+          <h1 className="text-2xl font-display text-white">Minhas orientações</h1>
           <p className="text-ink-300 text-sm mt-1">
             Banhos e orações solicitados aos consultores. As entregas chegam aqui e por e-mail.
           </p>

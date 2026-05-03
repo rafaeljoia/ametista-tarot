@@ -63,7 +63,7 @@ export default function AdminConfigPage() {
     try {
       const { data } = await adminClient().patch('/admin/offering-deadline', { hours: Number(deadlineHours) })
       setDeadlineHours(Number(data?.deadlineHours) || 24)
-      setSuccess('Prazo das oferendas atualizado')
+      setSuccess('Prazo das orientações atualizado')
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao salvar prazo')
     } finally {
@@ -156,9 +156,9 @@ export default function AdminConfigPage() {
       <Card>
         <div className="p-5 space-y-4">
           <div>
-            <h2 className="text-white font-medium">Prazo de entrega das oferendas</h2>
+            <h2 className="text-white font-medium">Prazo de entrega das orientações</h2>
             <p className="text-xs text-ink-300 mt-1">
-              Quanto tempo o(a) consultor(a) tem para entregar uma oferenda solicitada antes do pedido expirar e o cliente ser reembolsado automaticamente.
+              Quanto tempo o(a) consultor(a) tem para entregar uma orientação solicitada antes do pedido expirar e o cliente ser reembolsado automaticamente.
             </p>
           </div>
           <div className="flex items-end gap-3 max-w-sm">

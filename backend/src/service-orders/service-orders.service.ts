@@ -169,7 +169,7 @@ export class ServiceOrdersService implements OnModuleInit {
     const price = Number(offer.price);
     if (!Number.isFinite(price) || price <= 0) {
       throw new BadRequestException(
-        'Valor da oferenda não configurado. Peça ao administrador para definir um preço maior que zero.',
+        'Valor da orientação não configurado. Peça ao administrador para definir um preço maior que zero.',
       );
     }
 
@@ -194,7 +194,7 @@ export class ServiceOrdersService implements OnModuleInit {
         });
         if (dup && (dup.status === 'pending' || dup.status === 'delivered' || dup.status === 'sent')) {
           throw new BadRequestException(
-            'Você já solicitou uma oferenda para este atendimento.',
+            'Você já solicitou uma orientação para este atendimento.',
           );
         }
       }
@@ -289,7 +289,7 @@ export class ServiceOrdersService implements OnModuleInit {
     order.sentAt = now;
     await this.ordersRepo.save(order);
 
-    const kindLabel = KIND_LABEL[order.kind] || 'oferenda';
+    const kindLabel = KIND_LABEL[order.kind] || 'orientação';
 
     // 1) Email para o cliente
     try {
@@ -359,7 +359,7 @@ export class ServiceOrdersService implements OnModuleInit {
             kind: 'offering_expired',
             title: `Pedido expirado — créditos devolvidos`,
             body:
-              `Seu pedido de ${KIND_LABEL[order.kind] || 'oferenda'} para ${order.consultantName} ` +
+              `Seu pedido de ${KIND_LABEL[order.kind] || 'orientação'} para ${order.consultantName} ` +
               `não foi entregue dentro do prazo. Os R$ ${Number(order.priceCredits).toFixed(2)} ` +
               `foram devolvidos ao seu saldo de créditos.`,
             link: '/dashboard/oferendas',

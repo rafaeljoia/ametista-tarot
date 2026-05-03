@@ -142,7 +142,7 @@ export class MailService {
       `Olá ${data.clientName},\n\n` +
       `${data.consultantName} acabou de te enviar a ${data.kindLabel} solicitada:\n\n` +
       `${data.deliveryText}\n\n` +
-      `Você também pode ver esta mensagem na sua área "Minhas oferendas" da plataforma.\n\n` +
+      `Você também pode ver esta mensagem na sua área "Minhas orientações" da plataforma.\n\n` +
       `Equipe Ametista Tarot`;
     const html = renderOfferingDeliveredHtml(data);
     return this.sendRaw({ to: data.to, subject, text, html });

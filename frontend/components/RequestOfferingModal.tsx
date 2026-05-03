@@ -117,7 +117,7 @@ export function RequestOfferingModal({
           )}
 
           <p className="text-ink-100 text-sm">
-            Solicite uma oferenda especial preparada por <strong>{consultantName}</strong>.
+            Solicite uma orientação especial preparada por <strong>{consultantName}</strong>.
             Marque o que deseja receber — pode ser apenas o banho, apenas a oração, ou os
             dois juntos. <strong>Você é cobrado uma única vez</strong> independentemente da
             escolha. O texto chega no seu e-mail e na caixa de entrada da plataforma assim
@@ -193,7 +193,7 @@ export function RequestOfferingModal({
                 </>
               ) : settings ? (
                 <span className="text-amber-300">
-                  Preço da oferenda ainda não configurado pelo administrador.
+                  Preço da orientação ainda não configurado pelo administrador.
                 </span>
               ) : null}
             </div>
