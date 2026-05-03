@@ -52,6 +52,7 @@ export function Navbar({ variant = 'public' }: NavbarProps) {
   const [consultant, setConsultant] = useState<ConsultantShape | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
+  const [pendingOrders, setPendingOrders] = useState(0)
 
   useEffect(() => {
     if (variant === 'client' || variant === 'public') {
@@ -62,6 +63,30 @@ export function Navbar({ variant = 'public' }: NavbarProps) {
       const c = localStorage.getItem('consultant')
       if (c) setConsultant(JSON.parse(c))
     }
+  }, [variant, pathname])
+
+  // Atualiza contador de pedidos pendentes (banhos/orações) pro consultor.
+  useEffect(() => {
+    if (variant !== 'consultant') return
+    const token = typeof window !== 'undefined' ? localStorage.getItem('consultant-token') : null
+    if (!token) return
+    const API = process.env.NEXT_PUBLIC_API_URL || '/api'
+    let cancelled = false
+    const fetchCount = async () => {
+      try {
+        const res = await fetch(`${API}/consultant/service-orders`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) return
+        const data = await res.json()
+        if (cancelled) return
+        const pending = Array.isArray(data) ? data.filter((o: any) => o.status === 'pending').length : 0
+        setPendingOrders(pending)
+      } catch {}
+    }
+    fetchCount()
+    const t = setInterval(fetchCount, 60_000)
+    return () => { cancelled = true; clearInterval(t) }
   }, [variant, pathname])
 
   const logoutClient = () => {
@@ -166,6 +191,17 @@ export function Navbar({ variant = 'public' }: NavbarProps) {
               <Link href="/consultant-dashboard" className={navLink(pathname === '/consultant-dashboard')}>
                 Painel
               </Link>
+              <Link
+                href="/consultor/pedidos"
+                className={`${navLink(pathname === '/consultor/pedidos')} flex items-center gap-1.5`}
+              >
+                Pedidos
+                {pendingOrders > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-mystic-500 text-white text-[11px] font-semibold tabular-nums">
+                    {pendingOrders}
+                  </span>
+                )}
+              </Link>
               <Link href="/consultor/perfil" className={navLink(pathname === '/consultor/perfil')}>
                 Meu perfil
               </Link>
@@ -244,6 +280,14 @@ export function Navbar({ variant = 'public' }: NavbarProps) {
             <>
               <div className="px-3 py-2 text-ink-300 text-sm border-b border-white/[0.06]">{consultant.name}</div>
               <Link href="/consultant-dashboard" className="block px-3 py-2 rounded-md hover:bg-white/[0.05]">Painel</Link>
+              <Link href="/consultor/pedidos" className="px-3 py-2 rounded-md hover:bg-white/[0.05] flex items-center justify-between">
+                <span>Pedidos</span>
+                {pendingOrders > 0 && (
+                  <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-mystic-500 text-white text-[11px] font-semibold tabular-nums">
+                    {pendingOrders}
+                  </span>
+                )}
+              </Link>
               <Link href="/consultor/perfil" className="block px-3 py-2 rounded-md hover:bg-white/[0.05]">Meu perfil</Link>
               <button onClick={logoutConsultant} className="block w-full text-left px-3 py-2 rounded-md text-red-300 hover:bg-red-500/10">
                 Sair
