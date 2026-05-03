@@ -200,8 +200,8 @@ export default function AdminTermsPage() {
               <div className="flex justify-between items-center text-sm">
                 <span className="text-ink-300">Total: {acc.total}</span>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="secondary" disabled={acc.page <= 1} onClick={() => loadAcceptances(acc.page - 1)}>Anterior</Button>
-                  <Button size="sm" variant="secondary" disabled={acc.page * acc.pageSize >= acc.total} onClick={() => loadAcceptances(acc.page + 1)}>Próxima</Button>
+                  <Button size="sm" variant="ghost" disabled={acc.page <= 1} onClick={() => loadAcceptances(acc.page - 1)}>Anterior</Button>
+                  <Button size="sm" variant="ghost" disabled={acc.page * acc.pageSize >= acc.total} onClick={() => loadAcceptances(acc.page + 1)}>Próxima</Button>
                 </div>
               </div>
             )}
