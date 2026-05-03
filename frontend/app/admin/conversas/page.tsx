@@ -136,7 +136,7 @@ export default function AdminConversasPage() {
                     <td className="py-2 px-2 text-white">{c.client?.name || '—'}</td>
                     <td className="py-2 px-2 text-white">{c.consultant?.name || '—'}</td>
                     <td className="py-2 px-2">
-                      <Badge variant="default">{KIND_LABEL[c.kind] || c.kind}</Badge>
+                      <Badge variant="mystic">{KIND_LABEL[c.kind] || c.kind}</Badge>
                     </td>
                     <td className="py-2 px-2 text-ink-300">{STATUS_LABEL[c.status] || c.status}</td>
                     <td className="py-2 px-2">{Number(c.minutesUsed || 0).toFixed(1)}</td>
