@@ -48,11 +48,19 @@ export class ChatService {
     await this.messagesRepository.update(messageId, { isRead: true });
   }
 
-  async startConsultation(clientId: string, consultantId: string) {
+  async startConsultation(
+    clientId: string,
+    consultantId: string,
+    kind: 'chat' | 'voice' | 'video' = 'chat',
+    priceSnapshot?: number,
+  ) {
     const consultation = this.consultationsRepository.create({
       clientId,
       consultantId,
       status: 'active',
+      kind,
+      priceSnapshot:
+        typeof priceSnapshot === 'number' ? priceSnapshot : null,
       startedAt: new Date(),
     });
 

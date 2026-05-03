@@ -13,13 +13,34 @@ import { AuthGuard } from '@nestjs/passport';
 import { AdminService } from './admin.service';
 import { AdminGuard } from './admin.guard';
 import { ReviewsService } from '../reviews/reviews.service';
+import { SystemSettingsService } from '../system-settings/system-settings.service';
 
 @Controller('admin')
 export class AdminController {
   constructor(
     private admin: AdminService,
     private reviews: ReviewsService,
+    private systemSettings: SystemSettingsService,
   ) {}
+
+  // ---- Pricing (preços globais) ----
+  @Get('pricing')
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
+  async getPricing() {
+    return this.systemSettings.getPricing();
+  }
+
+  @Patch('pricing')
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
+  async updatePricing(
+    @Body() body: { chat?: number; voice?: number; video?: number },
+  ) {
+    return this.systemSettings.setPricing({
+      chat: typeof body?.chat === 'number' ? body.chat : undefined,
+      voice: typeof body?.voice === 'number' ? body.voice : undefined,
+      video: typeof body?.video === 'number' ? body.video : undefined,
+    });
+  }
 
   // ---- AUTH (público) ----
   @Post('login')

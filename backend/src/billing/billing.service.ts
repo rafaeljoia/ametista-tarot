@@ -64,7 +64,12 @@ export class BillingService {
       const target = Math.max(already, Number(targetElapsedMinutes || 0));
       const delta = +(target - already).toFixed(6);
 
-      const price = Number(consultant.pricePerMinute || 0);
+      // Preço congelado no início da consulta (Fase 1 WebRTC).
+      // Fallback pra pricePerMinute do consultor pra dados antigos sem snapshot.
+      const price =
+        c.priceSnapshot != null
+          ? Number(c.priceSnapshot)
+          : Number(consultant.pricePerMinute || 0);
       const available = Number(user.credits || 0);
 
       let charge = 0;

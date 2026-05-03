@@ -13,6 +13,7 @@ import { PresenceService } from '../presence/presence.service';
 import { BillingService } from '../billing/billing.service';
 import { AvailabilityAlertService } from '../notifications/availability-alert.service';
 import { ConsultantsService } from '../consultants/consultants.service';
+import { SystemSettingsService } from '../system-settings/system-settings.service';
 
 type IncomingMessageType = 'text' | 'image';
 
@@ -50,6 +51,7 @@ export class ChatGateway
     private billingService: BillingService,
     private availabilityAlerts: AvailabilityAlertService,
     private consultantsService: ConsultantsService,
+    private systemSettings: SystemSettingsService,
   ) {}
 
   onModuleInit() {
@@ -203,7 +205,12 @@ export class ChatGateway
   @SubscribeMessage('call-consultant')
   handleCallConsultant(
     client: Socket,
-    data: { consultantId: string; clientId: string; clientName: string },
+    data: {
+      consultantId: string;
+      clientId: string;
+      clientName: string;
+      kind?: 'chat' | 'voice' | 'video';
+    },
   ) {
     const id = this.getIdentity(client);
     const clientId = id?.role === 'user' ? id.sub : data.clientId;
@@ -219,20 +226,27 @@ export class ChatGateway
     client.join(`user:${clientId}`);
 
     const callId = `${clientId}-${data.consultantId}`;
+    const kind = (data.kind === 'voice' || data.kind === 'video') ? data.kind : 'chat';
 
     this.server.to(consultantSocketId).emit('incoming-call', {
       callId,
       clientId,
       clientName: data.clientName,
+      kind,
     });
 
-    client.emit('calling', { status: 'ringing', callId });
+    client.emit('calling', { status: 'ringing', callId, kind });
   }
 
   @SubscribeMessage('accept-call')
   async handleAcceptCall(
     client: Socket,
-    data: { callId: string; clientId: string; consultantId: string },
+    data: {
+      callId: string;
+      clientId: string;
+      consultantId: string;
+      kind?: 'chat' | 'voice' | 'video';
+    },
   ) {
     const id = this.getIdentity(client);
     // Only the consultant being called may accept.
@@ -241,9 +255,19 @@ export class ChatGateway
       return;
     }
 
+    const kind: 'chat' | 'voice' | 'video' =
+      data.kind === 'voice' || data.kind === 'video' ? data.kind : 'chat';
+
+    // Snapshot do preço vigente — protege billing contra mudanças de preço durante a chamada.
+    const priceSnapshot = await this.systemSettings
+      .getPricePerMinute(kind)
+      .catch(() => undefined);
+
     const consultation = await this.chatService.startConsultation(
       data.clientId,
       data.consultantId,
+      kind,
+      priceSnapshot,
     );
 
     // Mark the consultant as 'in_consultation' for the duration of the call.

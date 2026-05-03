@@ -8,6 +8,7 @@ import { PresenceModule } from '../presence/presence.module';
 import { BillingModule } from '../billing/billing.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ConsultantsModule } from '../consultants/consultants.module';
+import { SystemSettingsModule } from '../system-settings/system-settings.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ConsultantsModule } from '../consultants/consultants.module';
     BillingModule,
     NotificationsModule,
     ConsultantsModule,
+    SystemSettingsModule,
   ],
   providers: [ChatService, ChatGateway],
   exports: [ChatService, ChatGateway],

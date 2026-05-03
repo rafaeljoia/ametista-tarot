@@ -17,6 +17,15 @@ export class Consultation {
   @Column({ enum: ['scheduled', 'active', 'completed', 'cancelled'], default: 'scheduled' })
   status: string;
 
+  // 'chat' | 'voice' | 'video' — tipo da chamada, define qual preço foi cobrado.
+  @Column({ type: 'varchar', length: 16, default: 'chat' })
+  kind: string;
+
+  // Preço por minuto vigente no instante em que a consulta foi iniciada.
+  // Congela o valor pra proteger billing contra mudanças de preço durante a chamada.
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  priceSnapshot: number | null;
+
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   minutesUsed: number;
 

@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { adminClient, clearAdminToken, hasAdminToken } from '../../lib/admin-api'
 
 type IconKey =
-  | 'overview' | 'consultants' | 'users' | 'finance' | 'transactions' | 'sessions' | 'reviews'
+  | 'overview' | 'consultants' | 'users' | 'finance' | 'transactions' | 'sessions' | 'reviews' | 'pricing'
 
 const NAV: { href: string; label: string; icon: IconKey }[] = [
   { href: '/admin', label: 'Visão geral', icon: 'overview' },
@@ -16,6 +16,7 @@ const NAV: { href: string; label: string; icon: IconKey }[] = [
   { href: '/admin/transacoes', label: 'Transações', icon: 'transactions' },
   { href: '/admin/consultas', label: 'Consultas', icon: 'sessions' },
   { href: '/admin/reviews', label: 'Avaliações', icon: 'reviews' },
+  { href: '/admin/pricing', label: 'Preços', icon: 'pricing' },
 ]
 
 function NavIcon({ name, className = 'w-4 h-4' }: { name: IconKey; className?: string }) {
@@ -36,6 +37,7 @@ function NavIcon({ name, className = 'w-4 h-4' }: { name: IconKey; className?: s
     case 'transactions': return <svg {...common}><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M3 10h18" /></svg>
     case 'sessions':     return <svg {...common}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
     case 'reviews':      return <svg {...common}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+    case 'pricing':      return <svg {...common}><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4" /><path d="M4 6v14a2 2 0 0 0 2 2h14v-4" /><path d="M18 12a2 2 0 0 0 0 4h4v-4z" /></svg>
   }
 }
 

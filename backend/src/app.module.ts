@@ -14,6 +14,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { MailModule } from './mail/mail.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { AdminModule } from './admin/admin.module';
+import { SystemSettingsModule } from './system-settings/system-settings.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseConfig } from './config/database.config';
@@ -35,6 +36,7 @@ import { DatabaseConfig } from './config/database.config';
     UploadsModule,
     ReviewsModule,
     AdminModule,
+    SystemSettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

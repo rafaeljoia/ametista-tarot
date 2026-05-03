@@ -12,6 +12,7 @@ import { ConsultantEarning } from '../database/entities/consultant-earning.entit
 import { CommissionPayout } from '../database/entities/commission-payout.entity';
 import { Message } from '../database/entities/message.entity';
 import { ReviewsModule } from '../reviews/reviews.module';
+import { SystemSettingsModule } from '../system-settings/system-settings.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ReviewsModule } from '../reviews/reviews.module';
       signOptions: { expiresIn: '12h' },
     }),
     ReviewsModule,
+    SystemSettingsModule,
   ],
   controllers: [AdminController],
   providers: [AdminService],

@@ -37,6 +37,12 @@ interface Review {
   clientFirstName: string
 }
 
+interface Pricing {
+  chat: number
+  voice: number
+  video: number
+}
+
 export default function ConsultantProfilePage() {
   const router = useRouter()
   const params = useParams()
@@ -45,6 +51,7 @@ export default function ConsultantProfilePage() {
   const [consultant, setConsultant] = useState<Consultant | null>(null)
   const [stats, setStats] = useState<Stats | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
+  const [pricing, setPricing] = useState<Pricing | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -63,11 +70,19 @@ export default function ConsultantProfilePage() {
       axios
         .get(`${process.env.NEXT_PUBLIC_API_URL}/consultants/${consultantId}/reviews?limit=10`)
         .catch(() => ({ data: [] })),
+      axios
+        .get(`${process.env.NEXT_PUBLIC_API_URL}/pricing`)
+        .catch(() => ({ data: { chat: 1, voice: 3, video: 5 } })),
     ])
-      .then(([cRes, sRes, rRes]) => {
+      .then(([cRes, sRes, rRes, pRes]) => {
         setConsultant(cRes.data)
         if (sRes) setStats(sRes.data)
         setReviews(rRes.data || [])
+        setPricing({
+          chat: Number(pRes.data.chat),
+          voice: Number(pRes.data.voice),
+          video: Number(pRes.data.video),
+        })
       })
       .catch(() => setError('Consultor não encontrado'))
       .finally(() => setLoading(false))
@@ -126,7 +141,7 @@ export default function ConsultantProfilePage() {
               <div className="mt-5 sm:mt-0 sm:text-right">
                 <p className="text-xs text-ink-300 uppercase tracking-wider">Tarifa</p>
                 <p className="font-display text-2xl text-gradient-gold">
-                  R$ {Number(consultant.pricePerMinute).toFixed(2)}
+                  a partir de R$ {Number(pricing?.chat ?? consultant.pricePerMinute).toFixed(2)}
                   <span className="text-sm text-ink-200/80">/min</span>
                 </p>
               </div>
@@ -187,30 +202,80 @@ export default function ConsultantProfilePage() {
             )}
 
             {/* Action */}
-            <div className="mt-10 grid sm:grid-cols-2 gap-3">
-              {isLoggedIn ? (
-                consultant.isOnline ? (
-                  <LinkButton href={`/calling/${consultant.id}`} variant="primary" size="lg">
-                    Iniciar chamada
+            {isLoggedIn ? (
+              consultant.isOnline ? (
+                <div className="mt-10 space-y-3">
+                  <p className="text-xs uppercase tracking-wider text-ink-300">
+                    Escolha o tipo de consulta
+                  </p>
+                  <div className="grid sm:grid-cols-3 gap-3">
+                    <LinkButton
+                      href={`/calling/${consultant.id}?kind=chat`}
+                      variant="primary"
+                      size="lg"
+                      className="flex-col items-stretch text-left"
+                    >
+                      <span className="block font-semibold">💬 Chat</span>
+                      <span className="block text-xs opacity-80 mt-1">
+                        R$ {(pricing?.chat ?? 1).toFixed(2)}/min
+                      </span>
+                    </LinkButton>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        alert('Voz estará disponível em breve (Fase 3 do WebRTC).')
+                      }
+                      className="rounded-2xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.06] transition-colors px-5 py-4 text-left opacity-70 cursor-not-allowed"
+                      disabled
+                    >
+                      <span className="block font-semibold text-white">🎙️ Voz</span>
+                      <span className="block text-xs text-ink-300 mt-1">
+                        R$ {(pricing?.voice ?? 3).toFixed(2)}/min · em breve
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        alert('Vídeo estará disponível em breve (Fase 5 do WebRTC).')
+                      }
+                      className="rounded-2xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.06] transition-colors px-5 py-4 text-left opacity-70 cursor-not-allowed"
+                      disabled
+                    >
+                      <span className="block font-semibold text-white">📹 Vídeo</span>
+                      <span className="block text-xs text-ink-300 mt-1">
+                        R$ {(pricing?.video ?? 5).toFixed(2)}/min · em breve
+                      </span>
+                    </button>
+                  </div>
+                  <LinkButton
+                    href="/dashboard"
+                    variant="outline"
+                    size="md"
+                    className="w-full sm:w-auto"
+                  >
+                    Ver outros consultores
                   </LinkButton>
-                ) : (
+                </div>
+              ) : (
+                <div className="mt-10 grid sm:grid-cols-2 gap-3">
                   <Button variant="ghost" size="lg" disabled>
                     Consultor(a) indisponível
                   </Button>
-                )
-              ) : (
+                  <LinkButton href="/dashboard" variant="outline" size="lg">
+                    Ver outros consultores
+                  </LinkButton>
+                </div>
+              )
+            ) : (
+              <div className="mt-10 grid sm:grid-cols-2 gap-3">
                 <LinkButton href="/register" variant="primary" size="lg">
                   Criar conta para conversar
                 </LinkButton>
-              )}
-              <LinkButton
-                href={isLoggedIn ? '/dashboard' : '/#consultores'}
-                variant="outline"
-                size="lg"
-              >
-                Ver outros consultores
-              </LinkButton>
-            </div>
+                <LinkButton href="/#consultores" variant="outline" size="lg">
+                  Ver outros consultores
+                </LinkButton>
+              </div>
+            )}
           </div>
         </Card>
       </div>
