@@ -5,7 +5,7 @@ export class SystemSetting {
   @PrimaryColumn({ type: 'varchar', length: 64 })
   key: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'text' })
   value: string;
 
   @UpdateDateColumn()
