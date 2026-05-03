@@ -7,10 +7,9 @@ import axios from 'axios'
 import { Card } from '../../../../components/ui/Card'
 import { Button } from '../../../../components/ui/Button'
 import { Badge } from '../../../../components/ui/Badge'
-import { Modal } from '../../../../components/ui/Modal'
-import { Alert } from '../../../../components/ui/Alert'
 import { PageLoader } from '../../../../components/ui/Spinner'
 import { ReviewForm } from '../../../../components/ReviewForm'
+import { RequestOfferingModal } from '../../../../components/RequestOfferingModal'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
@@ -58,8 +57,6 @@ export default function ConsultaFinalizadaPage() {
   // Oferta pós-atendimento (só para clientes em atendimentos completos)
   const [offer, setOffer] = useState<PostCallOffer | null>(null)
   const [offerOpen, setOfferOpen] = useState(false)
-  const [offerStatus, setOfferStatus] = useState<'idle' | 'sending' | 'ordered' | 'declined' | 'error'>('idle')
-  const [offerMsg, setOfferMsg] = useState<string>('')
 
   useEffect(() => {
     const token =
@@ -82,38 +79,21 @@ export default function ConsultaFinalizadaPage() {
       })
       .finally(() => setLoading(false))
 
-    // Só cliente recebe a oferta
+    // Só cliente recebe a oferta — abre o popup de banho/oração automaticamente
     if (role === 'user') {
-      axios.get(`${API}/post-call-offer`).then(({ data }) => {
-        if (data?.enabled) {
-          setOffer(data)
+      axios.get(`${API}/offering-settings`).then(({ data }) => {
+        if (data?.enabled && Number(data.price) > 0) {
+          setOffer({ enabled: true, price: Number(data.price), text: '' })
           setOfferOpen(true)
         }
       }).catch(() => undefined)
     }
   }, [id, role, router])
 
-  async function acceptOffer() {
-    if (!offer) return
-    setOfferStatus('sending')
-    setOfferMsg('')
-    try {
-      const token = localStorage.getItem('token')
-      await axios.post(`${API}/service-orders/blessing`, { consultationId: id }, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      setOfferStatus('ordered')
-    } catch (err: any) {
-      setOfferStatus('error')
-      setOfferMsg(err.response?.data?.message || 'Não foi possível processar o pedido.')
-    }
-  }
-
-  function renderOfferText() {
-    if (!offer) return ''
-    return offer.text
-      .replace(/\{\{\s*price\s*\}\}/gi, Number(offer.price).toFixed(2).replace('.', ','))
-      .replace(/\{\{\s*consultant\s*\}\}/gi, data?.consultant?.name || 'sua atendente')
+  function renderOfferIntro() {
+    const consultantName = data?.consultant?.name || 'sua atendente'
+    const priceStr = offer ? Number(offer.price).toFixed(2).replace('.', ',') : ''
+    return `Por R$ ${priceStr}, ${consultantName} pode preparar e enviar para você um banho de descarrego, uma oração personalizada, ou ambos. Você é cobrado uma única vez independentemente da escolha.`
   }
 
   if (loading) return <PageLoader label="Carregando resumo…" />
@@ -209,47 +189,16 @@ export default function ConsultaFinalizadaPage() {
         </Card>
       </div>
 
-      {/* Modal de oferta pós-atendimento (só para cliente, se enabled) */}
-      {offer && (
-        <Modal
+      {/* Popup pós-atendimento: cliente escolhe banho e/ou oração (cobrança única) */}
+      {offer && data?.consultant && (
+        <RequestOfferingModal
           open={offerOpen}
           onClose={() => setOfferOpen(false)}
-          title="Uma indicação especial pra você"
-          size="md"
-        >
-          {offerStatus === 'ordered' ? (
-            <>
-              <Alert variant="success">
-                Pedido confirmado! Em breve você receberá no seu e-mail as indicações de banhos e orações preparadas pela atendente.
-              </Alert>
-              <div className="mt-4 flex justify-end">
-                <Button onClick={() => setOfferOpen(false)}>Fechar</Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-ink-100 leading-relaxed">{renderOfferText()}</p>
-              {offerStatus === 'error' && offerMsg && (
-                <Alert variant="error" className="mt-3">{offerMsg}</Alert>
-              )}
-              <div className="mt-5 flex justify-end gap-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => { setOfferStatus('declined'); setOfferOpen(false) }}
-                  disabled={offerStatus === 'sending'}
-                >
-                  Não, obrigado(a)
-                </Button>
-                <Button onClick={acceptOffer} loading={offerStatus === 'sending'}>
-                  Sim, quero receber
-                </Button>
-              </div>
-              <p className="text-xs text-ink-300 mt-3">
-                R$ {Number(offer.price).toFixed(2).replace('.', ',')} serão debitados do seu saldo de créditos.
-              </p>
-            </>
-          )}
-        </Modal>
+          consultantId={data.consultant.id}
+          consultantName={data.consultant.name}
+          consultationId={data.id}
+          introText={renderOfferIntro()}
+        />
       )}
     </main>
   )

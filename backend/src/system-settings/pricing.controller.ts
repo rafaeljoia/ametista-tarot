@@ -32,17 +32,22 @@ export class PricingController {
     });
   }
 
-  // Público — frontend usa pra exibir o prazo restante das oferendas
+  // Público — frontend usa pra exibir o prazo restante das oferendas.
+  // Oferenda fica "enabled" sempre que houver um preço > 0 cadastrado, independente
+  // da flag "post_call_offer_enabled" (que controla apenas o popup automático pós-call).
   @Get('offering-settings')
   async getOfferingSettings() {
     const [offer, deadlineHours] = await Promise.all([
       this.settings.getPostCallOffer(),
       this.settings.getOfferingDeadlineHours(),
     ]);
+    const price = Number(offer.price) || 0;
     return {
-      enabled: offer.enabled,
-      price: offer.price,
+      enabled: price > 0,
+      price,
       deadlineHours,
+      // separado, caso o frontend queira respeitar o toggle do admin no popup automático
+      postCallEnabled: offer.enabled,
     };
   }
 

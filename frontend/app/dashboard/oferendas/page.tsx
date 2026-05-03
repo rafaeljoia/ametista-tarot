@@ -27,6 +27,7 @@ interface Order {
 const KIND_LABEL: Record<string, string> = {
   bath: 'Banho',
   prayer: 'Oração',
+  bath_prayer: 'Banho e Oração',
   blessing: 'Banhos / orações',
 }
 

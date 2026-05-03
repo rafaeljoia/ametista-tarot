@@ -16,10 +16,11 @@ import { SystemSettingsService } from '../system-settings/system-settings.servic
 import { MailService } from '../mail/mail.service';
 import { InboxService } from '../inbox/inbox.service';
 
-const VALID_KINDS = new Set(['bath', 'prayer', 'blessing']);
+const VALID_KINDS = new Set(['bath', 'prayer', 'bath_prayer', 'blessing']);
 const KIND_LABEL: Record<string, string> = {
   bath: 'banho',
   prayer: 'oração',
+  bath_prayer: 'banho e oração',
   blessing: 'banhos / orações',
 };
 
@@ -163,13 +164,13 @@ export class ServiceOrdersService implements OnModuleInit {
       );
     }
 
+    // Oferenda independe da flag de "post-call" — se admin tem preço > 0 cadastrado, está disponível.
     const offer = await this.settings.getPostCallOffer();
-    if (!offer.enabled) {
-      throw new BadRequestException('Oferendas indisponíveis no momento');
-    }
     const price = Number(offer.price);
     if (!Number.isFinite(price) || price <= 0) {
-      throw new BadRequestException('Valor da oferenda inválido');
+      throw new BadRequestException(
+        'Valor da oferenda não configurado. Peça ao administrador para definir um preço maior que zero.',
+      );
     }
 
     const user = await this.usersRepo.findOne({ where: { id: input.userId } });
@@ -187,12 +188,22 @@ export class ServiceOrdersService implements OnModuleInit {
       });
       if (consultation && consultation.clientId === input.userId) {
         consultationId = consultation.id;
+        // Evita pedido duplicado pra mesma consulta (cliente clicando 2x no popup, etc.)
+        const dup = await this.ordersRepo.findOne({
+          where: { consultationId, clientId: user.id },
+        });
+        if (dup && (dup.status === 'pending' || dup.status === 'delivered' || dup.status === 'sent')) {
+          throw new BadRequestException(
+            'Você já solicitou uma oferenda para este atendimento.',
+          );
+        }
       }
     }
 
-    if (Number(user.credits) < price) {
+    const userCredits = Number(user.credits);
+    if (!Number.isFinite(userCredits) || userCredits < price) {
       throw new BadRequestException(
-        `Saldo insuficiente. Necessário R$ ${price.toFixed(2)} em créditos.`,
+        `Saldo insuficiente. Você tem R$ ${(Number.isFinite(userCredits) ? userCredits : 0).toFixed(2)} e o pedido custa R$ ${price.toFixed(2)}.`,
       );
     }
 

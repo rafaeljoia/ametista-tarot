@@ -25,7 +25,7 @@ export class ServiceOrdersController {
     @Body()
     body: {
       consultantId: string;
-      kind: 'bath' | 'prayer';
+      kind: 'bath' | 'prayer' | 'bath_prayer';
       consultationId?: string;
       message?: string;
     },
