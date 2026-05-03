@@ -6,6 +6,7 @@ import { Button } from '../../../components/ui/Button'
 import { Input } from '../../../components/ui/Input'
 import { Badge } from '../../../components/ui/Badge'
 import { Modal } from '../../../components/ui/Modal'
+import { ExportButtons } from '../../../components/ui/ExportButtons'
 import { adminClient } from '../../../lib/admin-api'
 
 interface User {
@@ -61,9 +62,24 @@ export default function AdminUsuariosPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-3xl text-white">Usuários</h1>
-        <p className="text-ink-200/80">{total} cadastrados</p>
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <div>
+          <h1 className="font-display text-3xl text-white">Usuários</h1>
+          <p className="text-ink-200/80">{total} cadastrados</p>
+        </div>
+        <ExportButtons
+          data={items}
+          filename={`usuarios-${new Date().toISOString().slice(0, 10)}`}
+          title="Usuários"
+          columns={[
+            { header: 'Nome', accessor: (u) => u.name, width: 28 },
+            { header: 'E-mail', accessor: (u) => u.email, width: 30 },
+            { header: 'Telefone', accessor: (u) => u.phone || '', width: 16 },
+            { header: 'Créditos', accessor: (u) => Number(u.credits || 0).toFixed(2) },
+            { header: 'Status', accessor: (u) => (u.isActive ? 'Ativo' : 'Inativo') },
+            { header: 'Cadastro', accessor: (u) => new Date(u.createdAt).toLocaleString('pt-BR') },
+          ]}
+        />
       </div>
 
       <Card className="p-4 flex gap-3">

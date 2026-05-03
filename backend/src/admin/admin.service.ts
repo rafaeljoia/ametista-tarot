@@ -243,6 +243,141 @@ export class AdminService {
 
   // -------------------- FINANCEIRO --------------------
 
+  // -------------------- ANALYTICS (dashboards) --------------------
+
+  async getAnalyticsOverview() {
+    const now = new Date();
+    const start30 = new Date(now);
+    start30.setDate(now.getDate() - 29);
+    start30.setHours(0, 0, 0, 0);
+
+    // KPIs simples
+    const [
+      usersCount,
+      activeUsers,
+      consultantsCount,
+      activeConsultants,
+      consultationsLast30,
+      pendingCommissionsRows,
+    ] = await Promise.all([
+      this.users.count(),
+      this.users.count({ where: { isActive: true } }),
+      this.consultants.count(),
+      this.consultants.count({ where: { isActive: true } }),
+      this.consultations.count({
+        where: { status: 'completed', startedAt: MoreThanOrEqual(start30) },
+      }),
+      this.getCommissionsToPay(),
+    ]);
+
+    // Receita últimos 30 dias (transações aprovadas)
+    const approvedTx30 = await this.transactions.find({
+      where: { status: 'approved', createdAt: MoreThanOrEqual(start30) },
+    });
+    const revenueLast30 = approvedTx30.reduce((s, t) => s + Number(t.gross || 0), 0);
+    const ticketAvgLast30 = approvedTx30.length ? revenueLast30 / approvedTx30.length : 0;
+    const pendingCommissions = pendingCommissionsRows.reduce(
+      (s: number, r: any) => s + Number(r.pending || 0),
+      0,
+    );
+
+    // Séries por dia (últimos 30) — preenche todos os dias
+    const days: string[] = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(start30);
+      d.setDate(start30.getDate() + i);
+      days.push(d.toISOString().slice(0, 10));
+    }
+
+    const revenueRaw = await this.transactions
+      .createQueryBuilder('t')
+      .select(`to_char(t."createdAt"::date, 'YYYY-MM-DD')`, 'date')
+      .addSelect('SUM(t.gross)', 'revenue')
+      .where('t.status = :s', { s: 'approved' })
+      .andWhere('t."createdAt" >= :start', { start: start30 })
+      .groupBy('t."createdAt"::date')
+      .getRawMany();
+    const revenueMap = new Map(revenueRaw.map((r: any) => [r.date, Number(r.revenue || 0)]));
+    const revenueByDay = days.map((d) => ({ date: d, revenue: +(revenueMap.get(d) || 0).toFixed(2) }));
+
+    const consultRaw = await this.consultations
+      .createQueryBuilder('c')
+      .select(`to_char(c."startedAt"::date, 'YYYY-MM-DD')`, 'date')
+      .addSelect('COUNT(*)', 'count')
+      .where('c.status = :s', { s: 'completed' })
+      .andWhere('c."startedAt" >= :start', { start: start30 })
+      .groupBy('c."startedAt"::date')
+      .getRawMany();
+    const consultMap = new Map(consultRaw.map((r: any) => [r.date, Number(r.count || 0)]));
+    const consultationsByDay = days.map((d) => ({ date: d, count: consultMap.get(d) || 0 }));
+
+    const usersRaw = await this.users
+      .createQueryBuilder('u')
+      .select(`to_char(u."createdAt"::date, 'YYYY-MM-DD')`, 'date')
+      .addSelect('COUNT(*)', 'count')
+      .where('u."createdAt" >= :start', { start: start30 })
+      .groupBy('u."createdAt"::date')
+      .getRawMany();
+    const usersMap = new Map(usersRaw.map((r: any) => [r.date, Number(r.count || 0)]));
+    const newUsersByDay = days.map((d) => ({ date: d, count: usersMap.get(d) || 0 }));
+
+    // Distribuição por tipo nos últimos 30d
+    const kindRaw = await this.consultations
+      .createQueryBuilder('c')
+      .select('c.kind', 'kind')
+      .addSelect('COUNT(*)', 'count')
+      .where('c.status = :s', { s: 'completed' })
+      .andWhere('c."startedAt" >= :start', { start: start30 })
+      .groupBy('c.kind')
+      .getRawMany();
+    const kindMap = new Map(kindRaw.map((r: any) => [r.kind || 'chat', Number(r.count || 0)]));
+    const consultationsByKind = ['chat', 'voice', 'video'].map((k) => ({
+      kind: k,
+      count: kindMap.get(k) || 0,
+    }));
+
+    // Top 10 consultores por receita (geral, all-time)
+    const topRaw = await this.earnings
+      .createQueryBuilder('e')
+      .select('e."consultantId"', 'consultantId')
+      .addSelect('SUM(e."consultantAmount")', 'revenue')
+      .addSelect('COUNT(*)', 'consultations')
+      .groupBy('e."consultantId"')
+      .orderBy('SUM(e."consultantAmount")', 'DESC')
+      .limit(10)
+      .getRawMany();
+    const topIds = topRaw.map((r: any) => r.consultantId);
+    const topConsultants = topIds.length
+      ? await this.consultants.find({ where: { id: In(topIds) } })
+      : [];
+    const topMap = new Map(topConsultants.map((c) => [c.id, c]));
+    const topConsultantsByRevenue = topRaw.map((r: any) => ({
+      id: r.consultantId,
+      name: topMap.get(r.consultantId)?.name || '—',
+      revenue: +Number(r.revenue || 0).toFixed(2),
+      consultations: Number(r.consultations || 0),
+    }));
+
+    return {
+      generatedAt: new Date().toISOString(),
+      summary: {
+        usersCount,
+        activeUsers,
+        consultantsCount,
+        activeConsultants,
+        consultationsLast30,
+        revenueLast30: +revenueLast30.toFixed(2),
+        ticketAvgLast30: +ticketAvgLast30.toFixed(2),
+        pendingCommissions: +pendingCommissions.toFixed(2),
+      },
+      revenueByDay,
+      consultationsByDay,
+      newUsersByDay,
+      consultationsByKind,
+      topConsultantsByRevenue,
+    };
+  }
+
   async getStats(period: Period = 'month') {
     const start = startOfPeriod(period);
 

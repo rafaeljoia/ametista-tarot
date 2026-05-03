@@ -5,6 +5,7 @@ import { Card } from '../../../components/ui/Card'
 import { Badge } from '../../../components/ui/Badge'
 import { Button } from '../../../components/ui/Button'
 import { Modal } from '../../../components/ui/Modal'
+import { ExportButtons } from '../../../components/ui/ExportButtons'
 import { adminClient } from '../../../lib/admin-api'
 
 interface Consultation {
@@ -85,9 +86,25 @@ export default function AdminConsultasPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-3xl text-white">Atendimentos</h1>
-        <p className="text-ink-200/80">{total} no total · somente leitura</p>
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <div>
+          <h1 className="font-display text-3xl text-white">Atendimentos</h1>
+          <p className="text-ink-200/80">{total} no total · somente leitura</p>
+        </div>
+        <ExportButtons
+          data={items}
+          filename={`atendimentos-${new Date().toISOString().slice(0, 10)}`}
+          title="Atendimentos"
+          columns={[
+            { header: 'Data', accessor: (c: any) => c.startedAt ? new Date(c.startedAt).toLocaleString('pt-BR') : '—', width: 18 },
+            { header: 'Cliente', accessor: (c: any) => c.clientName || c.userName || '—', width: 24 },
+            { header: 'Consultor', accessor: (c: any) => c.consultantName || '—', width: 24 },
+            { header: 'Tipo', accessor: (c: any) => c.kind || 'chat' },
+            { header: 'Status', accessor: (c: any) => c.status },
+            { header: 'Minutos', accessor: (c: any) => c.durationMinutes || c.minutes || 0 },
+            { header: 'Cobrado (R$)', accessor: (c: any) => Number(c.totalCharged || c.charged || 0).toFixed(2) },
+          ]}
+        />
       </div>
 
       <Card className="p-4 flex flex-wrap gap-3">

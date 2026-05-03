@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Card } from '../../../components/ui/Card'
 import { Badge } from '../../../components/ui/Badge'
 import { Button } from '../../../components/ui/Button'
+import { ExportButtons } from '../../../components/ui/ExportButtons'
 import { adminClient } from '../../../lib/admin-api'
 
 interface Transaction {
@@ -64,9 +65,28 @@ export default function AdminTransacoesPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-3xl text-white">Transações</h1>
-        <p className="text-ink-200/80">{total} no total</p>
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <div>
+          <h1 className="font-display text-3xl text-white">Transações</h1>
+          <p className="text-ink-200/80">{total} no total</p>
+        </div>
+        <ExportButtons
+          data={items}
+          filename={`transacoes-${new Date().toISOString().slice(0, 10)}`}
+          title="Transações"
+          columns={[
+            { header: 'Data', accessor: (t) => new Date(t.createdAt).toLocaleString('pt-BR'), width: 18 },
+            { header: 'Usuário', accessor: (t) => t.userName || '—', width: 24 },
+            { header: 'E-mail', accessor: (t) => t.userEmail || '—', width: 28 },
+            { header: 'Pacote', accessor: (t) => t.packageId, width: 16 },
+            { header: 'Método', accessor: (t) => t.method.toUpperCase() },
+            { header: 'Status', accessor: (t) => t.status },
+            { header: 'Bruto (R$)', accessor: (t) => Number(t.gross).toFixed(2) },
+            { header: 'Líquido (R$)', accessor: (t) => Number(t.net).toFixed(2) },
+            { header: 'Créditos', accessor: (t) => Number(t.creditsAmount) },
+            { header: 'Gateway ID', accessor: (t) => t.gatewayId || '', width: 22 },
+          ]}
+        />
       </div>
 
       <Card className="p-4 flex flex-wrap gap-3">

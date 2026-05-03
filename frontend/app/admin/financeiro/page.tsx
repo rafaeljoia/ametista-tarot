@@ -5,6 +5,7 @@ import { Card } from '../../../components/ui/Card'
 import { Button } from '../../../components/ui/Button'
 import { Input } from '../../../components/ui/Input'
 import { Modal } from '../../../components/ui/Modal'
+import { ExportButtons } from '../../../components/ui/ExportButtons'
 import { adminClient } from '../../../lib/admin-api'
 
 interface Commission {
@@ -84,14 +85,29 @@ export default function AdminFinanceiroPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl text-white">Financeiro</h1>
-        <p className="text-ink-200/80">
-          Comissões a pagar:{' '}
-          <span className="text-gold-300 font-semibold">
-            R$ {totalPending.toFixed(2)}
-          </span>
-        </p>
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <div>
+          <h1 className="font-display text-3xl text-white">Financeiro</h1>
+          <p className="text-ink-200/80">
+            Comissões a pagar:{' '}
+            <span className="text-gold-300 font-semibold">
+              R$ {totalPending.toFixed(2)}
+            </span>
+          </p>
+        </div>
+        <ExportButtons
+          data={commissions}
+          filename={`comissoes-${new Date().toISOString().slice(0, 10)}`}
+          title="Comissões a pagar"
+          columns={[
+            { header: 'Consultor', accessor: (c: any) => c.consultantName, width: 26 },
+            { header: 'E-mail', accessor: (c: any) => c.consultantEmail, width: 30 },
+            { header: 'Atendimentos', accessor: (c: any) => c.consultations },
+            { header: 'Ganho total (R$)', accessor: (c: any) => Number(c.totalEarned).toFixed(2) },
+            { header: 'Pago (R$)', accessor: (c: any) => Number(c.totalPaid).toFixed(2) },
+            { header: 'Pendente (R$)', accessor: (c: any) => Number(c.pending).toFixed(2) },
+          ]}
+        />
       </div>
 
       <Card className="overflow-hidden">

@@ -83,6 +83,13 @@ export class AdminController {
     return this.admin.getStats(period || 'month');
   }
 
+  // Analytics (dashboard com gráficos)
+  @Get('analytics/overview')
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
+  async analyticsOverview() {
+    return this.admin.getAnalyticsOverview();
+  }
+
   @Get('finance/commissions')
   @UseGuards(AuthGuard('jwt'), AdminGuard)
   async commissions() {

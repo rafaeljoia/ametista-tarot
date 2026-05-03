@@ -6,10 +6,11 @@ import { usePathname, useRouter } from 'next/navigation'
 import { adminClient, clearAdminToken, hasAdminToken } from '../../lib/admin-api'
 
 type IconKey =
-  | 'overview' | 'consultants' | 'users' | 'finance' | 'transactions' | 'sessions' | 'reviews' | 'pricing' | 'conversations' | 'terms' | 'settings'
+  | 'overview' | 'analytics' | 'consultants' | 'users' | 'finance' | 'transactions' | 'sessions' | 'reviews' | 'pricing' | 'conversations' | 'terms' | 'settings'
 
 const NAV: { href: string; label: string; icon: IconKey }[] = [
   { href: '/admin', label: 'Visão geral', icon: 'overview' },
+  { href: '/admin/analytics', label: 'Analytics', icon: 'analytics' },
   { href: '/admin/consultores', label: 'Consultores', icon: 'consultants' },
   { href: '/admin/usuarios', label: 'Usuários', icon: 'users' },
   { href: '/admin/financeiro', label: 'Financeiro', icon: 'finance' },
@@ -44,6 +45,7 @@ function NavIcon({ name, className = 'w-4 h-4' }: { name: IconKey; className?: s
     case 'conversations':return <svg {...common}><path d="M8 12h.01M12 12h.01M16 12h.01"/><path d="M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 0 1-4-.8L3 21l1.5-4A8 8 0 0 1 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
     case 'terms':        return <svg {...common}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
     case 'settings':     return <svg {...common}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.36.14.66.4.86.74"/></svg>
+    case 'analytics':    return <svg {...common}><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
   }
 }
 

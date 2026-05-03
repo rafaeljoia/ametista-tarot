@@ -6,6 +6,7 @@ import { Button } from '../../../components/ui/Button'
 import { Input } from '../../../components/ui/Input'
 import { Badge } from '../../../components/ui/Badge'
 import { Modal } from '../../../components/ui/Modal'
+import { ExportButtons } from '../../../components/ui/ExportButtons'
 import { adminClient } from '../../../lib/admin-api'
 
 interface Consultant {
@@ -135,7 +136,24 @@ export default function AdminConsultoresPage() {
           <h1 className="font-display text-3xl text-white">Consultores</h1>
           <p className="text-ink-200/80">Gerencie cadastros, tarifas e comissões.</p>
         </div>
-        <Button onClick={() => setEditing({ ...EMPTY })}>+ Novo consultor</Button>
+        <div className="flex gap-2 items-center">
+          <ExportButtons
+            data={items}
+            filename={`consultores-${new Date().toISOString().slice(0, 10)}`}
+            title="Consultores"
+            columns={[
+              { header: 'Nome', accessor: (c) => c.name, width: 28 },
+              { header: 'E-mail', accessor: (c) => c.email, width: 30 },
+              { header: 'Especialidade', accessor: (c) => c.specialty, width: 24 },
+              { header: 'R$/min', accessor: (c) => Number(c.pricePerMinute).toFixed(2) },
+              { header: 'Comissão %', accessor: (c) => Number(c.commissionPercent) },
+              { header: 'Avaliação', accessor: (c) => Number(c.rating).toFixed(1) },
+              { header: 'Atendimentos', accessor: (c) => c.consultationsCount },
+              { header: 'Status', accessor: (c) => (c.isActive ? 'Ativo' : 'Inativo') },
+            ]}
+          />
+          <Button onClick={() => setEditing({ ...EMPTY })}>+ Novo consultor</Button>
+        </div>
       </div>
 
       <Card className="p-4 flex gap-3">
