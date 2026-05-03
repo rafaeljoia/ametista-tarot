@@ -15,6 +15,7 @@ import { TermsVersion } from '../database/entities/terms-version.entity';
 import { TermsAcceptance } from '../database/entities/terms-acceptance.entity';
 import { PasswordResetToken } from '../database/entities/password-reset-token.entity';
 import { ServiceOrder } from '../database/entities/service-order.entity';
+import { InboxMessage } from '../database/entities/inbox-message.entity';
 
 export const DatabaseConfig = (): TypeOrmModuleOptions => ({
   type: 'postgres',
@@ -40,6 +41,7 @@ export const DatabaseConfig = (): TypeOrmModuleOptions => ({
     TermsAcceptance,
     PasswordResetToken,
     ServiceOrder,
+    InboxMessage,
   ],
   synchronize: true,
   logging: process.env.NODE_ENV === 'development',
