@@ -11,6 +11,10 @@ import { Review } from '../database/entities/review.entity';
 import { Admin } from '../database/entities/admin.entity';
 import { CommissionPayout } from '../database/entities/commission-payout.entity';
 import { SystemSetting } from '../database/entities/system-setting.entity';
+import { TermsVersion } from '../database/entities/terms-version.entity';
+import { TermsAcceptance } from '../database/entities/terms-acceptance.entity';
+import { PasswordResetToken } from '../database/entities/password-reset-token.entity';
+import { ServiceOrder } from '../database/entities/service-order.entity';
 
 export const DatabaseConfig = (): TypeOrmModuleOptions => ({
   type: 'postgres',
@@ -32,6 +36,10 @@ export const DatabaseConfig = (): TypeOrmModuleOptions => ({
     Admin,
     CommissionPayout,
     SystemSetting,
+    TermsVersion,
+    TermsAcceptance,
+    PasswordResetToken,
+    ServiceOrder,
   ],
   synchronize: true,
   logging: process.env.NODE_ENV === 'development',

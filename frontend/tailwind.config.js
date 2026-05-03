@@ -8,89 +8,80 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Brand accent — restrained Radix violet, used sparingly.
         mystic: {
-          50:  '#f7f3ff',
-          100: '#ede1ff',
-          200: '#dcc4ff',
-          300: '#c39bff',
-          400: '#a86bff',
-          500: '#8b3dff',
-          600: '#7322e6',
-          700: '#5b18b8',
-          800: '#3f0e8a',
-          900: '#26075c',
-          950: '#16003a',
-        },
-        gold: {
-          50:  '#fdf9ec',
-          100: '#fbf0c8',
-          200: '#f6e08e',
-          300: '#f0c84f',
-          400: '#e8b228',
-          500: '#d49b1c',
-          600: '#b27915',
-          700: '#8b5a14',
-          800: '#724817',
-          900: '#5f3c18',
-        },
-        rose: {
-          400: '#ec4899',
-          500: '#db2777',
-        },
-        ink: {
           50:  '#f5f3ff',
-          100: '#e9e4f5',
-          200: '#cfc6e3',
-          300: '#a497c7',
-          400: '#7868a4',
-          500: '#574785',
-          600: '#3e3066',
-          700: '#2a1f4a',
-          800: '#1a1133',
-          900: '#0e0823',
-          950: '#070315',
+          100: '#ede9fe',
+          200: '#ddd6fe',
+          300: '#c4b5fd',
+          400: '#a78bfa',
+          500: '#8b5cf6',
+          600: '#7c3aed',
+          700: '#6d28d9',
+          800: '#5b21b6',
+          900: '#4c1d95',
+          950: '#2e1065',
+        },
+        // Subtle amber — only for the "credits" affordance. No flashy gradients.
+        gold: {
+          50:  '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#f59e0b',
+          500: '#d97706',
+          600: '#b45309',
+          700: '#92400e',
+          800: '#78350f',
+          900: '#451a03',
+        },
+        // Neutral grayscale — Linear/Vercel "premium dark" inspired.
+        // ink-900 = page background (near-black); ink-100 = primary text;
+        // ink-200/300 = muted text; ink-700/800 = surfaces; ink-50 = inverse.
+        ink: {
+          50:  '#fafafa',
+          100: '#e6e6e9',
+          200: '#a1a1aa',
+          300: '#71717a',
+          400: '#52525b',
+          500: '#3f3f46',
+          600: '#27272a',
+          700: '#1f1f23',
+          800: '#141417',
+          900: '#0a0a0c',
+          950: '#050507',
         },
       },
       fontFamily: {
-        display: ['var(--font-display)', 'Playfair Display', 'Georgia', 'serif'],
+        // Display surface (headings/large numbers): Geist; Inter as ramp fallback.
+        display: ['var(--font-display)', 'Geist', 'Inter', 'system-ui', 'sans-serif'],
+        // Body / UI: Inter.
         sans: ['var(--font-sans)', 'Inter', 'system-ui', 'sans-serif'],
       },
       backgroundImage: {
+        // Toned-down ambient gradient: near-black with one cool violet wash.
         'mystic-gradient':
-          'radial-gradient(ellipse at top, rgba(139,61,255,0.25) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(212,155,28,0.10) 0%, transparent 55%), linear-gradient(180deg, #0e0823 0%, #16003a 60%, #070315 100%)',
+          'radial-gradient(ellipse at 20% -10%, rgba(124,58,237,0.10) 0%, transparent 55%), linear-gradient(180deg, #0a0a0c 0%, #0a0a0c 100%)',
+        // Solid amber rather than flashy ramp.
         'gold-gradient':
-          'linear-gradient(135deg, #f0c84f 0%, #d49b1c 50%, #8b5a14 100%)',
+          'linear-gradient(180deg, #f59e0b 0%, #d97706 100%)',
         'mystic-card':
-          'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
+          'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.00) 100%)',
       },
       boxShadow: {
-        glow: '0 0 32px -4px rgba(139,61,255,0.45)',
-        gold: '0 0 24px -4px rgba(212,155,28,0.45)',
-        soft: '0 10px 40px -10px rgba(0,0,0,0.5)',
+        // Quiet, Stripe-like elevation — no neon glow.
+        glow: '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 8px 24px -12px rgba(0,0,0,0.5)',
+        gold: '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 6px 20px -10px rgba(245,158,11,0.25)',
+        soft: '0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -16px rgba(0,0,0,0.6)',
       },
       animation: {
-        'float': 'float 6s ease-in-out infinite',
-        'shimmer': 'shimmer 2.5s linear infinite',
-        'twinkle': 'twinkle 3s ease-in-out infinite',
         'pulse-ring': 'pulse-ring 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       keyframes: {
-        float: {
-          '0%,100%': { transform: 'translateY(0px)' },
-          '50%': { transform: 'translateY(-12px)' },
-        },
-        shimmer: {
-          '0%': { backgroundPosition: '-200% 0' },
-          '100%': { backgroundPosition: '200% 0' },
-        },
-        twinkle: {
-          '0%,100%': { opacity: '0.3' },
-          '50%': { opacity: '1' },
-        },
         'pulse-ring': {
-          '0%': { transform: 'scale(0.95)', boxShadow: '0 0 0 0 rgba(139,61,255,0.55)' },
-          '70%': { transform: 'scale(1)', boxShadow: '0 0 0 18px rgba(139,61,255,0)' },
-          '100%': { transform: 'scale(0.95)', boxShadow: '0 0 0 0 rgba(139,61,255,0)' },
+          '0%':   { transform: 'scale(0.95)', boxShadow: '0 0 0 0 rgba(124,58,237,0.30)' },
+          '70%':  { transform: 'scale(1)',    boxShadow: '0 0 0 14px rgba(124,58,237,0)' },
+          '100%': { transform: 'scale(0.95)', boxShadow: '0 0 0 0 rgba(124,58,237,0)' },
         },
       },
     },

@@ -70,6 +70,10 @@ export default function LoginPage() {
             <Link href="/register" className="text-mystic-300 hover:text-white">
               Crie a sua aqui
             </Link>
+            {' '}·{' '}
+            <Link href="/forgot-password" className="text-mystic-300 hover:text-white">
+              Esqueci minha senha
+            </Link>
             .
           </p>
 

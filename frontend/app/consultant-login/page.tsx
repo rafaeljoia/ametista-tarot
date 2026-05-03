@@ -93,6 +93,12 @@ export default function ConsultantLoginPage() {
             </Button>
           </form>
 
+          <div className="mt-4 text-center text-sm">
+            <Link href="/forgot-password?role=consultant" className="text-mystic-300 hover:text-white">
+              Esqueci minha senha
+            </Link>
+          </div>
+
           <div className="mt-8 pt-6 border-t border-white/[0.06] text-center text-sm text-ink-400">
             Sou cliente —{' '}
             <Link href="/login" className="text-ink-200 hover:text-white">

@@ -78,7 +78,7 @@ export default function CallPage() {
     s.on('consultation-ended', () => router.push('/dashboard'))
     setSocket(s)
 
-    // Pega startedAt da consulta
+    // Pega startedAt da atendimento
     axios
       .get(`${API}/consultations/${consultationId}`, {
         headers: { Authorization: `Bearer ${t}` },

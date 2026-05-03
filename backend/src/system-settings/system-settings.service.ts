@@ -11,18 +11,35 @@ export interface Pricing {
   video: number;
 }
 
+export interface PostCallOffer {
+  enabled: boolean;
+  price: number;
+  text: string;
+}
+
 const KEYS = {
   chat: 'price_chat_per_min',
   voice: 'price_voice_per_min',
   video: 'price_video_per_min',
+  postCallEnabled: 'post_call_offer_enabled',
+  postCallPrice: 'post_call_offer_price',
+  postCallText: 'post_call_offer_text',
 } as const;
 
 const DEFAULTS: Pricing = { chat: 1, voice: 3, video: 5 };
+const POST_CALL_DEFAULT: PostCallOffer = {
+  enabled: false,
+  price: 5,
+  text:
+    'Por apenas R$ {{price}}, você pode receber indicação de banhos e orações. ' +
+    'A atendente {{consultant}} pode preparar e enviar diretamente no seu e-mail.',
+};
 const CACHE_TTL_MS = 60_000;
 
 @Injectable()
 export class SystemSettingsService {
   private cache: { data: Pricing; expiresAt: number } | null = null;
+  private offerCache: { data: PostCallOffer; expiresAt: number } | null = null;
 
   constructor(
     @InjectRepository(SystemSetting)
@@ -32,11 +49,11 @@ export class SystemSettingsService {
   async getPricing(): Promise<Pricing> {
     if (this.cache && this.cache.expiresAt > Date.now()) return this.cache.data;
     const rows = await this.repo.find();
-    const map = new Map(rows.map((r) => [r.key, Number(r.value)]));
+    const map = new Map(rows.map((r) => [r.key, r.value]));
     const data: Pricing = {
-      chat: map.get(KEYS.chat) ?? DEFAULTS.chat,
-      voice: map.get(KEYS.voice) ?? DEFAULTS.voice,
-      video: map.get(KEYS.video) ?? DEFAULTS.video,
+      chat: this.toNum(map.get(KEYS.chat), DEFAULTS.chat),
+      voice: this.toNum(map.get(KEYS.voice), DEFAULTS.voice),
+      video: this.toNum(map.get(KEYS.video), DEFAULTS.video),
     };
     this.cache = { data, expiresAt: Date.now() + CACHE_TTL_MS };
     return data;
@@ -64,5 +81,64 @@ export class SystemSettingsService {
     }
     this.cache = null;
     return this.getPricing();
+  }
+
+  // ----- Oferta pós-atendimento -----
+
+  async getPostCallOffer(): Promise<PostCallOffer> {
+    if (this.offerCache && this.offerCache.expiresAt > Date.now()) {
+      return this.offerCache.data;
+    }
+    const rows = await this.repo.find();
+    const map = new Map(rows.map((r) => [r.key, r.value]));
+    const data: PostCallOffer = {
+      enabled: this.toBool(map.get(KEYS.postCallEnabled), POST_CALL_DEFAULT.enabled),
+      price: this.toNum(map.get(KEYS.postCallPrice), POST_CALL_DEFAULT.price),
+      text: (map.get(KEYS.postCallText) ?? POST_CALL_DEFAULT.text) || POST_CALL_DEFAULT.text,
+    };
+    this.offerCache = { data, expiresAt: Date.now() + CACHE_TTL_MS };
+    return data;
+  }
+
+  async setPostCallOffer(input: Partial<PostCallOffer>): Promise<PostCallOffer> {
+    if (typeof input.enabled === 'boolean') {
+      await this.repo.upsert(
+        { key: KEYS.postCallEnabled, value: input.enabled ? 'true' : 'false' } as any,
+        { conflictPaths: ['key'] },
+      );
+    }
+    if (typeof input.price === 'number') {
+      if (!Number.isFinite(input.price) || input.price < 0) {
+        throw new Error(`Preço inválido para oferta: ${input.price}`);
+      }
+      await this.repo.upsert(
+        { key: KEYS.postCallPrice, value: input.price.toFixed(2) } as any,
+        { conflictPaths: ['key'] },
+      );
+    }
+    if (typeof input.text === 'string') {
+      const t = input.text.trim();
+      if (t.length < 10) throw new Error('Texto da oferta muito curto');
+      await this.repo.upsert(
+        { key: KEYS.postCallText, value: t } as any,
+        { conflictPaths: ['key'] },
+      );
+    }
+    this.offerCache = null;
+    return this.getPostCallOffer();
+  }
+
+  private toNum(v: any, def: number): number {
+    if (v === undefined || v === null || v === '') return def;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : def;
+  }
+  private toBool(v: any, def: boolean): boolean {
+    if (v === undefined || v === null || v === '') return def;
+    if (typeof v === 'boolean') return v;
+    const s = String(v).trim().toLowerCase();
+    if (['true', '1', 'yes', 'sim'].includes(s)) return true;
+    if (['false', '0', 'no', 'nao', 'não'].includes(s)) return false;
+    return def;
   }
 }

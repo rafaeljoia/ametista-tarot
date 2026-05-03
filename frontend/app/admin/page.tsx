@@ -84,7 +84,7 @@ export default function AdminDashboard() {
             />
             <KPI label="Receita líquida" value={`R$ ${stats.revenueNet.toFixed(2)}`} />
             <KPI label="Transações aprovadas" value={stats.transactions} />
-            <KPI label="Consultas concluídas" value={stats.consultations} />
+            <KPI label="Atendimentos concluídas" value={stats.consultations} />
             <KPI
               label="Comissões a consultores"
               value={`R$ ${stats.consultantEarningsTotal.toFixed(2)}`}

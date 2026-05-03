@@ -83,7 +83,7 @@ export default function AdminPricingPage() {
       <header className="mb-6">
         <h1 className="font-display text-2xl text-white">Preços por minuto</h1>
         <p className="text-sm text-ink-300 mt-1">
-          Valores cobrados do cliente por minuto de consulta. A comissão
+          Valores cobrados do cliente por minuto de atendimento. A comissão
           repassada ao consultor é configurada por consultor (não aqui).
         </p>
       </header>
@@ -136,8 +136,8 @@ export default function AdminPricingPage() {
             </div>
 
             <p className="text-xs text-ink-400 pt-3 border-t border-white/[0.06]">
-              Mudanças só afetam consultas <strong>iniciadas após o salvamento</strong>.
-              Consultas em andamento continuam com o preço congelado no início.
+              Mudanças só afetam atendimentos <strong>iniciadas após o salvamento</strong>.
+              Atendimentos em andamento continuam com o preço congelado no início.
             </p>
           </form>
         )}

@@ -7,27 +7,27 @@ type Variant = 'primary' | 'gold' | 'ghost' | 'outline' | 'danger' | 'success'
 type Size = 'sm' | 'md' | 'lg'
 
 const base =
-  'inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-900 disabled:opacity-50 disabled:cursor-not-allowed select-none whitespace-nowrap'
+  'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-900 disabled:opacity-50 disabled:cursor-not-allowed select-none whitespace-nowrap'
 
 const variants: Record<Variant, string> = {
   primary:
-    'bg-gradient-to-r from-mystic-500 to-mystic-700 hover:from-mystic-400 hover:to-mystic-600 text-white shadow-glow focus-visible:ring-mystic-400',
+    'bg-mystic-600 hover:bg-mystic-500 text-white ring-1 ring-inset ring-white/10 focus-visible:ring-mystic-400',
   gold:
-    'bg-gold-gradient text-ink-900 hover:brightness-110 shadow-gold focus-visible:ring-gold-400',
+    'bg-gold-400 hover:bg-gold-300 text-ink-900 ring-1 ring-inset ring-black/10 focus-visible:ring-gold-400',
   ghost:
-    'bg-white/5 hover:bg-white/10 text-mystic-100 focus-visible:ring-mystic-400',
+    'bg-transparent hover:bg-white/[0.06] text-ink-100 focus-visible:ring-mystic-400',
   outline:
-    'bg-transparent border border-mystic-400/40 hover:bg-mystic-500/10 text-mystic-100 focus-visible:ring-mystic-400',
+    'bg-transparent border border-white/15 hover:border-white/25 hover:bg-white/[0.03] text-ink-100 focus-visible:ring-mystic-400',
   danger:
-    'bg-red-600/90 hover:bg-red-600 text-white focus-visible:ring-red-400',
+    'bg-red-600 hover:bg-red-500 text-white focus-visible:ring-red-400',
   success:
-    'bg-emerald-600/90 hover:bg-emerald-600 text-white focus-visible:ring-emerald-400',
+    'bg-emerald-600 hover:bg-emerald-500 text-white focus-visible:ring-emerald-400',
 }
 
 const sizes: Record<Size, string> = {
   sm: 'px-3 py-1.5 text-sm',
-  md: 'px-5 py-2.5 text-sm',
-  lg: 'px-7 py-3.5 text-base',
+  md: 'px-4 py-2 text-sm',
+  lg: 'px-5 py-2.5 text-[15px]',
 }
 
 interface CommonProps {

@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional, IsDateString } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional, IsDateString, IsUUID } from 'class-validator';
 
 export class RegisterDto {
   @IsString()
@@ -18,4 +18,13 @@ export class RegisterDto {
   @IsOptional()
   @IsDateString()
   birthDate?: string;
+
+  /**
+   * ID da versão dos termos aceita pelo usuário no momento do cadastro.
+   * Se não enviado, o backend resolve para a versão ativa atual e registra
+   * a aceitação automaticamente (compat com clientes mais antigos).
+   */
+  @IsOptional()
+  @IsUUID()
+  acceptedTermsVersionId?: string;
 }

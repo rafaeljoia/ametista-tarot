@@ -215,7 +215,7 @@ export default function ConsultantChatPage() {
   const handleSend = () => {
     if (!input.trim() || !socketRef.current || !consultant) return
     if (!resolvedClientId) {
-      setUploadError('Não foi possível identificar o cliente desta consulta. Recarregue a página.')
+      setUploadError('Não foi possível identificar o cliente desta atendimento. Recarregue a página.')
       return
     }
     const content = input.trim()
@@ -243,7 +243,7 @@ export default function ConsultantChatPage() {
     setUploadError(null)
     if (!file || !socketRef.current || !consultant) return
     if (!resolvedClientId) {
-      setUploadError('Não foi possível identificar o cliente desta consulta. Recarregue a página.')
+      setUploadError('Não foi possível identificar o cliente desta atendimento. Recarregue a página.')
       return
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -339,7 +339,7 @@ export default function ConsultantChatPage() {
         <div className="max-w-4xl mx-auto flex items-center gap-3">
           <Avatar name="Cliente" size="md" />
           <div className="flex-1 min-w-0">
-            <p className="text-white font-semibold truncate">Consulta em andamento</p>
+            <p className="text-white font-semibold truncate">Atendimento em andamento</p>
             <p className="text-mystic-300 text-xs truncate">
               {isTyping ? 'cliente digitando…' : 'Atendendo cliente'}
             </p>

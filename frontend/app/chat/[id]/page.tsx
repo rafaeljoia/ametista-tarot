@@ -421,7 +421,7 @@ export default function ChatPage() {
           <div className="max-w-4xl mx-auto">
             <Alert variant="warning">
               Seus créditos estão acabando — restam aproximadamente{' '}
-              <strong>{lowCredits.minutesLeft.toFixed(1)} min</strong>. A consulta
+              <strong>{lowCredits.minutesLeft.toFixed(1)} min</strong>. A atendimento
               será encerrada automaticamente quando zerar.
             </Alert>
           </div>
@@ -433,7 +433,7 @@ export default function ChatPage() {
           {messages.length === 0 && (
             <div className="text-center py-12">
               <p className="text-ink-100 font-display text-lg">
-                Consulta iniciada com {consultant?.name}
+                Atendimento iniciada com {consultant?.name}
               </p>
               <p className="text-ink-300 text-sm mt-1">
                 A cobrança ocorre por minuto utilizado.
@@ -561,7 +561,7 @@ export default function ChatPage() {
       <Modal
         open={confirmEnd}
         onClose={() => (ending ? null : setConfirmEnd(false))}
-        title="Encerrar consulta?"
+        title="Encerrar atendimento?"
       >
         <p className="text-ink-200">
           Você está a {formatMMSS(seconds)} em chamada. Ao encerrar, a cobrança final

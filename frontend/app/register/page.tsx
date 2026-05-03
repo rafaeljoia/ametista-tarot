@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import axios from 'axios'
@@ -8,9 +8,19 @@ import { Logo } from '../../components/Logo'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
 import { Alert } from '../../components/ui/Alert'
+import { Modal } from '../../components/ui/Modal'
 
 const AUTH_PHOTO =
   'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?auto=format&fit=crop&w=1400&q=80'
+
+const API = process.env.NEXT_PUBLIC_API_URL || '/api'
+
+interface TermsView {
+  id: string
+  version: number
+  content: string
+  publishedAt: string
+}
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -22,8 +32,15 @@ export default function RegisterPage() {
     phone: '',
     birthDate: '',
   })
+  const [accepted, setAccepted] = useState(false)
+  const [terms, setTerms] = useState<TermsView | null>(null)
+  const [showTerms, setShowTerms] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    axios.get(`${API}/terms/current`).then((r) => setTerms(r.data)).catch(() => undefined)
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -41,15 +58,20 @@ export default function RegisterPage() {
       setError('As senhas não coincidem')
       return
     }
+    if (!accepted) {
+      setError('Você precisa aceitar os Termos de Uso para continuar.')
+      return
+    }
 
     setLoading(true)
     try {
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
+      const res = await axios.post(`${API}/auth/register`, {
         name: formData.name,
         email: formData.email,
         password: formData.password,
         phone: formData.phone,
         birthDate: formData.birthDate,
+        acceptedTermsVersionId: terms?.id,
       })
       localStorage.setItem('token', res.data.access_token)
       localStorage.setItem('user', JSON.stringify(res.data.user))
@@ -99,71 +121,50 @@ export default function RegisterPage() {
           {error && <Alert variant="error" className="mb-5">{error}</Alert>}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              label="Nome completo"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Como prefere ser chamada(o)"
-              required
-            />
-            <Input
-              label="E-mail"
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="seu@email.com"
-              required
-              autoComplete="email"
-            />
+            <Input label="Nome completo" name="name" value={formData.name} onChange={handleChange} placeholder="Como prefere ser chamada(o)" required />
+            <Input label="E-mail" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="seu@email.com" required autoComplete="email" />
             <div className="grid grid-cols-2 gap-3">
-              <Input
-                label="Telefone"
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="(11) 99999-9999"
-              />
-              <Input
-                label="Nascimento"
-                type="date"
-                name="birthDate"
-                value={formData.birthDate}
-                onChange={handleChange}
-              />
+              <Input label="Telefone" type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="(11) 99999-9999" />
+              <Input label="Nascimento" type="date" name="birthDate" value={formData.birthDate} onChange={handleChange} />
             </div>
-            <Input
-              label="Senha"
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Mínimo 6 caracteres"
-              required
-              hint="Use ao menos 6 caracteres"
-            />
-            <Input
-              label="Confirmar senha"
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-            />
+            <Input label="Senha" type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Mínimo 6 caracteres" required hint="Use ao menos 6 caracteres" />
+            <Input label="Confirmar senha" type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" required />
 
-            <Button type="submit" loading={loading} fullWidth size="lg">
+            <label className="flex items-start gap-3 cursor-pointer pt-1">
+              <input
+                type="checkbox"
+                checked={accepted}
+                onChange={(e) => setAccepted(e.target.checked)}
+                className="mt-1 w-4 h-4 accent-mystic-500"
+              />
+              <span className="text-sm text-ink-200 leading-relaxed">
+                Li e aceito os{' '}
+                <button type="button" onClick={() => setShowTerms(true)} className="text-mystic-300 hover:text-white underline underline-offset-2">
+                  Termos de Uso
+                </button>
+                {terms ? <span className="text-ink-400"> (versão {terms.version})</span> : null}
+                {' '}da plataforma.
+              </span>
+            </label>
+
+            <Button type="submit" loading={loading} fullWidth size="lg" disabled={!accepted}>
               {loading ? 'Criando conta…' : 'Criar minha conta'}
             </Button>
-
-            <p className="text-xs text-ink-400 text-center leading-relaxed">
-              Ao continuar você concorda com nossos Termos e Política de Privacidade.
-            </p>
           </form>
         </div>
       </div>
+
+      {showTerms && terms && (
+        <Modal open onClose={() => setShowTerms(false)} title={`Termos de Uso — versão ${terms.version}`} size="lg">
+          <div className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-sm text-ink-100 leading-relaxed pr-2">
+            {terms.content}
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setShowTerms(false)}>Fechar</Button>
+            <Button onClick={() => { setAccepted(true); setShowTerms(false) }}>Aceitar e continuar</Button>
+          </div>
+        </Modal>
+      )}
     </main>
   )
 }

@@ -86,7 +86,7 @@ export default function AdminConsultasPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="font-display text-3xl text-white">Consultas</h1>
+        <h1 className="font-display text-3xl text-white">Atendimentos</h1>
         <p className="text-ink-200/80">{total} no total · somente leitura</p>
       </div>
 
@@ -132,7 +132,7 @@ export default function AdminConsultasPage() {
               {!loading && items.length === 0 && (
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-ink-300">
-                    Nenhuma consulta.
+                    Nenhuma atendimento.
                   </td>
                 </tr>
               )}

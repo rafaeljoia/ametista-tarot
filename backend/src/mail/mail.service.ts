@@ -97,6 +97,39 @@ export class MailService {
     return this.sendRaw({ to: data.to, subject, text, html });
   }
 
+  async sendPasswordReset(data: { to: string; name: string; link: string; ttlMinutes: number }): Promise<void> {
+    const subject = 'Redefinição de senha — Ametista Tarot';
+    const text =
+      `Olá ${data.name},\n\n` +
+      `Recebemos uma solicitação de redefinição de senha para sua conta.\n\n` +
+      `Para criar uma nova senha, acesse o link abaixo (válido por ${data.ttlMinutes} minutos):\n` +
+      `${data.link}\n\n` +
+      `Se você não solicitou essa alteração, ignore este e-mail — sua senha continuará a mesma.\n\n` +
+      `Equipe Ametista Tarot`;
+    const html = renderResetHtml(data);
+    return this.sendRaw({ to: data.to, subject, text, html });
+  }
+
+  async sendBlessingOrderToConsultant(data: {
+    to: string;
+    consultantName: string;
+    clientName: string;
+    clientEmail: string;
+    priceCredits: number;
+    orderId: string;
+  }): Promise<void> {
+    const subject = `Novo pedido de banhos/orações — ${data.clientName}`;
+    const text =
+      `Olá ${data.consultantName},\n\n` +
+      `O(a) cliente ${data.clientName} (${data.clientEmail}) solicitou indicação de banhos e orações ` +
+      `após o atendimento (R$ ${Number(data.priceCredits).toFixed(2)} já debitados do saldo).\n\n` +
+      `Por favor, prepare a indicação e envie diretamente para o e-mail do cliente.\n\n` +
+      `Pedido: ${data.orderId}\n\n` +
+      `Equipe Ametista Tarot`;
+    const html = renderBlessingOrderHtml(data);
+    return this.sendRaw({ to: data.to, subject, text, html });
+  }
+
   async sendConsultantOnlineNotification(data: ConsultantOnlineData): Promise<void> {
     const base = process.env.FRONTEND_URL || 'https://ametista.braviaglobal.com.br';
     const link = `${base}/consultor/${data.consultantId}`;
@@ -134,6 +167,50 @@ function renderConfirmationHtml(data: ConfirmationData & { dashboardUrl: string 
     <div style="text-align:center;margin:28px 0">
       <a href="${safeHtml(data.dashboardUrl)}" style="display:inline-block;background:linear-gradient(90deg,#6e3aff,#9d5cff);color:#fff;text-decoration:none;padding:12px 28px;border-radius:12px;font-weight:600">Ir para o painel</a>
     </div>
+    <p style="color:#a99cd6;font-size:12px;text-align:center;margin-top:24px">Ametista Tarot · Conexões que iluminam.</p>
+  </div>
+</body></html>`;
+}
+
+function renderResetHtml(data: { name: string; link: string; ttlMinutes: number }) {
+  return `
+<!doctype html>
+<html><body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#0f0a1f;padding:32px;color:#e5dff5">
+  <div style="max-width:560px;margin:0 auto;background:#1a1233;border:1px solid #2d1f55;border-radius:16px;padding:32px">
+    <h1 style="text-align:center;color:#fff;font-weight:600;margin:8px 0 16px">Redefinir sua senha</h1>
+    <p>Olá <strong>${safeHtml(data.name)}</strong>,</p>
+    <p>Recebemos um pedido para redefinir a senha da sua conta na Ametista Tarot.</p>
+    <p>Clique no botão abaixo para escolher uma nova senha. O link é válido por <strong>${data.ttlMinutes} minutos</strong>.</p>
+    <div style="text-align:center;margin:28px 0">
+      <a href="${safeHtml(data.link)}" style="display:inline-block;background:linear-gradient(90deg,#6e3aff,#9d5cff);color:#fff;text-decoration:none;padding:12px 28px;border-radius:12px;font-weight:600">Redefinir senha</a>
+    </div>
+    <p style="color:#a99cd6;font-size:12px;line-height:1.5">Se você não solicitou a redefinição, ignore este e-mail — sua senha continuará a mesma.</p>
+    <p style="color:#a99cd6;font-size:12px;text-align:center;margin-top:24px">Ametista Tarot · Conexões que iluminam.</p>
+  </div>
+</body></html>`;
+}
+
+function renderBlessingOrderHtml(data: {
+  consultantName: string;
+  clientName: string;
+  clientEmail: string;
+  priceCredits: number;
+  orderId: string;
+}) {
+  return `
+<!doctype html>
+<html><body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#0f0a1f;padding:32px;color:#e5dff5">
+  <div style="max-width:560px;margin:0 auto;background:#1a1233;border:1px solid #2d1f55;border-radius:16px;padding:32px">
+    <h1 style="text-align:center;color:#fff;font-weight:600;margin:8px 0 16px">Novo pedido de banhos / orações</h1>
+    <p>Olá <strong>${safeHtml(data.consultantName)}</strong>,</p>
+    <p>Você recebeu um novo pedido de indicação de banhos e orações.</p>
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;background:#221545;border-radius:12px;overflow:hidden">
+      <tr><td style="padding:12px 16px;color:#a99cd6">Cliente</td><td style="padding:12px 16px;text-align:right;color:#fff">${safeHtml(data.clientName)}</td></tr>
+      <tr><td style="padding:12px 16px;color:#a99cd6;border-top:1px solid #2d1f55">E-mail</td><td style="padding:12px 16px;text-align:right;color:#fff;border-top:1px solid #2d1f55"><a href="mailto:${safeHtml(data.clientEmail)}" style="color:#c9b6ff;text-decoration:none">${safeHtml(data.clientEmail)}</a></td></tr>
+      <tr><td style="padding:12px 16px;color:#a99cd6;border-top:1px solid #2d1f55">Valor pago</td><td style="padding:12px 16px;text-align:right;color:#f5d36a;font-weight:600;border-top:1px solid #2d1f55">R$ ${Number(data.priceCredits).toFixed(2)}</td></tr>
+      <tr><td style="padding:12px 16px;color:#a99cd6;border-top:1px solid #2d1f55">Pedido</td><td style="padding:12px 16px;text-align:right;color:#a99cd6;font-size:12px;border-top:1px solid #2d1f55">${safeHtml(data.orderId)}</td></tr>
+    </table>
+    <p style="line-height:1.6">Por favor, prepare a indicação e envie diretamente para o e-mail do cliente. Em seguida, marque o pedido como enviado no seu painel.</p>
     <p style="color:#a99cd6;font-size:12px;text-align:center;margin-top:24px">Ametista Tarot · Conexões que iluminam.</p>
   </div>
 </body></html>`;

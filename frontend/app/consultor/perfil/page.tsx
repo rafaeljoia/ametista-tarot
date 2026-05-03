@@ -101,7 +101,7 @@ export default function ConsultorPerfilReadOnlyPage() {
               <p className="text-sm text-mystic-300">{me.specialty}</p>
               <p className="text-xs text-ink-300">{me.email}</p>
               <div className="flex flex-wrap gap-2 pt-2">
-                <Badge>{me.totalConsultations} consultas</Badge>
+                <Badge>{me.totalConsultations} atendimentos</Badge>
                 <Badge>★ {Number(me.rating || 0).toFixed(1)}</Badge>
                 <Badge variant="gold">
                   Comissão: {Number(me.commissionPercent || 0).toFixed(0)}%

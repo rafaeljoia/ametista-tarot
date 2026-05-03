@@ -202,7 +202,7 @@ export default function DashboardPage() {
             <p className="text-ink-300 text-sm">Bem-vinda(o) de volta</p>
             <h1 className="font-display text-3xl text-white mt-1 tracking-tight">Olá, {user?.name?.split(' ')[0]}</h1>
             <p className="text-ink-200/80 mt-2 max-w-xl">
-              Escolha um(a) consultor(a) abaixo para iniciar sua consulta.
+              Escolha um(a) consultor(a) abaixo para iniciar sua atendimento.
               {onlineCount > 0 && (
                 <>
                   {' '}
@@ -257,7 +257,7 @@ export default function DashboardPage() {
               className="px-3 py-2.5 bg-ink-900/60 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-mystic-400"
             >
               <option value="rating">Melhor avaliação</option>
-              <option value="consultations">Mais consultas</option>
+              <option value="consultations">Mais atendimentos</option>
               <option value="price-asc">Menor preço</option>
               <option value="price-desc">Maior preço</option>
             </select>
@@ -348,7 +348,7 @@ function ConsultantCard({
           <div className="flex items-center gap-2 mt-1.5 text-xs text-ink-300">
             <span className="text-gold-300">★ {Number(c.rating).toFixed(1)}</span>
             <span>·</span>
-            <span>{c.consultationsCount} consultas</span>
+            <span>{c.consultationsCount} atendimentos</span>
           </div>
         </div>
       </div>

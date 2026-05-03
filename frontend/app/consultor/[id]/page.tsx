@@ -149,7 +149,7 @@ export default function ConsultantProfilePage() {
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3 mt-8">
-              <MiniStat label="Consultas" value={stats?.totalConsultations ?? consultant.consultationsCount} />
+              <MiniStat label="Atendimentos" value={stats?.totalConsultations ?? consultant.consultationsCount} />
               <MiniStat label="Este mês" value={stats?.consultationsMonth ?? 0} />
               <MiniStat label="Avaliação" value={`★ ${Number(consultant.rating).toFixed(1)}`} accent="gold" />
             </div>
@@ -206,7 +206,7 @@ export default function ConsultantProfilePage() {
               consultant.isOnline ? (
                 <div className="mt-10 space-y-3">
                   <p className="text-xs uppercase tracking-wider text-ink-300">
-                    Escolha o tipo de consulta
+                    Escolha o tipo de atendimento
                   </p>
                   <div className="grid sm:grid-cols-3 gap-3">
                     <LinkButton

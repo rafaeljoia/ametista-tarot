@@ -122,7 +122,7 @@ export default function ConsultantDashboardPage() {
       setStatus('in-call'); setIncomingCall(null)
       setMyStatus('in_consultation')
       if (bellInterval.current) clearInterval(bellInterval.current)
-      // Roteia conforme tipo de consulta. Chat → tela legacy; voz/vídeo → /consultant-call
+      // Roteia conforme tipo de atendimento. Chat → tela legacy; voz/vídeo → /consultant-call
       if (data.kind === 'voice' || data.kind === 'video') {
         router.push(`/consultant-call/${data.consultationId}?kind=${data.kind}&clientId=${data.clientId}`)
       } else {
@@ -160,7 +160,7 @@ export default function ConsultantDashboardPage() {
 
   const handleChangeStatus = async (next: 'online' | 'busy') => {
     if (myStatus === 'in_consultation') {
-      setStatusToast('Você está em atendimento. O status muda automaticamente ao fim da consulta.')
+      setStatusToast('Você está em atendimento. O status muda automaticamente ao fim da atendimento.')
       setTimeout(() => setStatusToast(null), 3500)
       return
     }
@@ -302,14 +302,14 @@ export default function ConsultantDashboardPage() {
               ★ {Number(stats?.rating ?? 5).toFixed(1)}
             </p>
             <p className="text-ink-200/80 text-sm mt-1">
-              {stats?.totalConsultations || 0} consultas no total
+              {stats?.totalConsultations || 0} atendimentos no total
             </p>
           </Card>
         </div>
 
         {/* Stats */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatCard label="Consultas hoje" value={stats?.consultationsToday ?? 0} accent="mystic" />
+          <StatCard label="Atendimentos hoje" value={stats?.consultationsToday ?? 0} accent="mystic" />
           <StatCard label="Esta semana" value={stats?.consultationsWeek ?? 0} accent="mystic" />
           <StatCard label="Este mês" value={stats?.consultationsMonth ?? 0} accent="mystic" />
           <StatCard
@@ -322,13 +322,13 @@ export default function ConsultantDashboardPage() {
         {/* History */}
         <Card variant="elevated" className="p-7">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="font-display text-xl text-white">Últimas consultas</h2>
+            <h2 className="font-display text-xl text-white">Últimas atendimentos</h2>
             <Badge variant="neutral">{stats?.recentConsultations?.length || 0} recentes</Badge>
           </div>
 
           {!stats?.recentConsultations?.length ? (
             <div className="py-10 text-center text-ink-300">
-              <p className="text-sm">Nenhuma consulta concluída ainda.</p>
+              <p className="text-sm">Nenhuma atendimento concluída ainda.</p>
             </div>
           ) : (
             <div className="overflow-x-auto -mx-3">

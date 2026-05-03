@@ -237,7 +237,7 @@ export default function ComprarCreditosPage() {
             Escolha seu pacote
           </h1>
           <p className="text-ink-200/80 mt-2">
-            1 crédito = 1 minuto na consulta-padrão. Pacotes maiores incluem bônus.
+            1 crédito = 1 minuto na atendimento-padrão. Pacotes maiores incluem bônus.
           </p>
         </div>
 

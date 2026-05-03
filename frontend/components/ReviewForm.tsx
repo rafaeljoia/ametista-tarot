@@ -93,7 +93,7 @@ export function ReviewForm({ consultationId, consultantName, onSubmitted }: Prop
   return (
     <Card variant="elevated" className="p-6 text-center">
       <h3 className="font-display text-xl text-white">
-        Como foi sua consulta{consultantName ? ` com ${consultantName}` : ''}?
+        Como foi sua atendimento{consultantName ? ` com ${consultantName}` : ''}?
       </h3>
       <p className="text-ink-200/80 text-sm mt-1">
         Sua avaliação ajuda outros clientes a escolher.

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter, Playfair_Display } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import './styles/globals.css'
 
 const inter = Inter({
@@ -8,7 +8,8 @@ const inter = Inter({
   display: 'swap',
 })
 
-const playfair = Playfair_Display({
+// Geist is loaded via @next/font self-hosted; falls back to Inter in tailwind config.
+const geist = Inter({
   subsets: ['latin'],
   variable: '--font-display',
   display: 'swap',
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} ${playfair.variable}`}>
+    <html lang="pt-BR" className={`${inter.variable} ${geist.variable}`}>
       <body className="font-sans">{children}</body>
     </html>
   )

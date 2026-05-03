@@ -118,7 +118,7 @@ export default function PerfilPage() {
         <div className="flex gap-1 mb-5 overflow-x-auto bg-white/5 p-1 rounded-xl border border-white/10 w-fit">
           <TabBtn active={tab === 'profile'} onClick={() => setTab('profile')}>Dados pessoais</TabBtn>
           <TabBtn active={tab === 'security'} onClick={() => setTab('security')}>Segurança</TabBtn>
-          <TabBtn active={tab === 'consultations'} onClick={() => setTab('consultations')}>Consultas</TabBtn>
+          <TabBtn active={tab === 'consultations'} onClick={() => setTab('consultations')}>Atendimentos</TabBtn>
           <TabBtn active={tab === 'transactions'} onClick={() => setTab('transactions')}>Transações</TabBtn>
           <TabBtn active={tab === 'history'} onClick={() => setTab('history')}>Créditos</TabBtn>
         </div>
@@ -245,12 +245,12 @@ function ConsultationsView({ items }: { items: ConsultationItem[] }) {
 
   return (
     <Card className="p-7">
-      <h2 className="font-display text-xl text-white mb-1">Suas consultas</h2>
+      <h2 className="font-display text-xl text-white mb-1">Suas atendimentos</h2>
       <p className="text-ink-200/80 text-sm mb-6">Histórico completo de atendimentos.</p>
 
       {items.length === 0 ? (
         <div className="py-12 text-center text-ink-300">
-          Você ainda não realizou nenhuma consulta.
+          Você ainda não realizou nenhuma atendimento.
         </div>
       ) : (
         <div className="space-y-3">

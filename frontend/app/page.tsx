@@ -151,7 +151,7 @@ export default function Home() {
                       <div className="flex items-center gap-2 mt-2 text-xs">
                         <span className="text-gold-300 tabular-nums">★ {Number(c.rating).toFixed(1)}</span>
                         <span className="text-ink-400">·</span>
-                        <span className="text-ink-300">{c.consultationsCount} consultas</span>
+                        <span className="text-ink-300">{c.consultationsCount} atendimentos</span>
                       </div>
                     </div>
                   </div>
@@ -209,7 +209,7 @@ export default function Home() {
                     <div className="flex items-center gap-2 mt-1 text-xs">
                       <span className="text-gold-300 tabular-nums">★ {Number(c.rating).toFixed(1)}</span>
                       <span className="text-ink-400">·</span>
-                      <span className="text-ink-300">{c.consultationsCount} consultas</span>
+                      <span className="text-ink-300">{c.consultationsCount} atendimentos</span>
                     </div>
                   </div>
                   <div className="text-right shrink-0">

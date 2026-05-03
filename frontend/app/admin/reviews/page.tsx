@@ -109,7 +109,7 @@ export default function AdminReviewsPage() {
                   {r.clientName} → {r.consultant.name}
                 </p>
                 <p className="text-ink-300 text-xs">
-                  {new Date(r.createdAt).toLocaleString('pt-BR')} · consulta{' '}
+                  {new Date(r.createdAt).toLocaleString('pt-BR')} · atendimento{' '}
                   <span className="font-mono">{r.consultationId.slice(0, 8)}</span>
                 </p>
                 {r.comment && (

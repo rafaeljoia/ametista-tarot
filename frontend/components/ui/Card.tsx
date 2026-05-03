@@ -13,15 +13,13 @@ export function Card({
   className = '',
   ...rest
 }: CardProps) {
-  const base = 'rounded-2xl border backdrop-blur-xl transition-all duration-300'
+  const base = 'rounded-xl border transition-colors duration-150'
   const variants = {
-    default: 'bg-white/[0.04] border-white/10 shadow-soft',
-    elevated: 'bg-gradient-to-br from-white/[0.07] to-white/[0.02] border-white/15 shadow-soft',
-    gold: 'bg-white/[0.04] border-gold-400/30 shadow-gold',
+    default:  'bg-ink-800/60 border-white/[0.06]',
+    elevated: 'bg-ink-800/80 border-white/[0.08] shadow-soft',
+    gold:     'bg-ink-800/60 border-gold-400/20',
   }
-  const hover = hoverable
-    ? 'hover:border-mystic-400/50 hover:shadow-glow hover:-translate-y-0.5 cursor-pointer'
-    : ''
+  const hover = hoverable ? 'hover:border-white/15 cursor-pointer' : ''
 
   return (
     <div className={[base, variants[variant], hover, className].join(' ')} {...rest}>

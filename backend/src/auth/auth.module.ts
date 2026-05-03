@@ -8,15 +8,18 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { User } from '../database/entities/user.entity';
 import { Consultant } from '../database/entities/consultant.entity';
 import { Admin } from '../database/entities/admin.entity';
+import { PasswordResetToken } from '../database/entities/password-reset-token.entity';
+import { TermsModule } from '../terms/terms.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Consultant, Admin]),
+    TypeOrmModule.forFeature([User, Consultant, Admin, PasswordResetToken]),
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your-secret-key',
       signOptions: { expiresIn: '24h' },
     }),
+    TermsModule,
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

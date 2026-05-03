@@ -122,7 +122,7 @@ export default function CallingPage() {
       if (ringInterval.current) clearInterval(ringInterval.current)
       if (dotsInterval.current) clearInterval(dotsInterval.current)
       setTimeout(() => {
-        // Roteia conforme o tipo de consulta. Chat → tela atual; voz/vídeo → /call.
+        // Roteia conforme o tipo de atendimento. Chat → tela atual; voz/vídeo → /call.
         if (kind === 'voice' || kind === 'video') {
           router.push(`/call/${data.consultationId}?kind=${kind}`)
         } else {

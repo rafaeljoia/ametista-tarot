@@ -9,33 +9,47 @@ export function Logo({
   href?: string
   showText?: boolean
 }) {
-  const dot = {
-    sm: 'w-7 h-7 text-base',
-    md: 'w-9 h-9 text-lg',
-    lg: 'w-14 h-14 text-2xl',
+  const mark = {
+    sm: 'w-7 h-7',
+    md: 'w-9 h-9',
+    lg: 'w-12 h-12',
   }[size]
 
   const text = {
     sm: 'text-base',
     md: 'text-lg',
-    lg: 'text-2xl',
+    lg: 'text-xl',
   }[size]
 
   return (
     <Link href={href} className="inline-flex items-center gap-2.5 group">
-      <div
+      {/* Geometric monogram — quiet, premium, no emoji. */}
+      <span
         className={[
-          'rounded-xl flex items-center justify-center',
-          'bg-gradient-to-br from-mystic-400 via-mystic-500 to-mystic-700',
-          'shadow-glow group-hover:scale-105 transition-transform',
-          dot,
+          'relative inline-flex items-center justify-center rounded-xl',
+          'bg-gradient-to-br from-mystic-500 to-mystic-700',
+          'ring-1 ring-white/10',
+          mark,
         ].join(' ')}
+        aria-hidden
       >
-        <span>✦</span>
-      </div>
+        <svg
+          viewBox="0 0 24 24"
+          className="w-1/2 h-1/2 text-white"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 2 L20 8 L17 21 L7 21 L4 8 Z" />
+          <path d="M4 8 L20 8" />
+          <path d="M9 8 L12 21 L15 8" />
+        </svg>
+      </span>
       {showText && (
-        <span className={`font-display tracking-wide text-white ${text}`}>
-          Ametista <span className="text-gradient-gold">Tarot</span>
+        <span className={`font-display font-medium tracking-tight text-white ${text}`}>
+          Ametista <span className="text-ink-200">Tarot</span>
         </span>
       )}
     </Link>

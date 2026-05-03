@@ -5,7 +5,7 @@
  * Diferenças da /call/[id]:
  *  - Auth com consultant-token / consultant
  *  - role='callee' (espera offer)
- *  - Sem botão "Encerrar" (regra: só cliente encerra a consulta)
+ *  - Sem botão "Encerrar" (regra: só cliente encerra a atendimento)
  *  - Mostra apenas ganho LÍQUIDO do consultor (consultantEarnings do tick)
  */
 
@@ -186,7 +186,7 @@ export default function ConsultantCallPage() {
             </Ctrl>
           )}
           <p className="text-xs text-ink-400 ml-3">
-            Apenas o cliente pode encerrar a consulta.
+            Apenas o cliente pode encerrar a atendimento.
           </p>
         </div>
       </footer>

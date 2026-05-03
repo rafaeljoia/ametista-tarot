@@ -161,7 +161,7 @@ export default function AdminUsuariosPage() {
             </div>
             <div>
               <h3 className="text-white font-semibold mt-3 mb-1">
-                Últimas consultas ({detail.consultations.length})
+                Últimas atendimentos ({detail.consultations.length})
               </h3>
               <ul className="text-ink-200 text-xs space-y-1 max-h-40 overflow-auto">
                 {detail.consultations.map((c: any) => (

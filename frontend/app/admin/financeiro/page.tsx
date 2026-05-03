@@ -103,7 +103,7 @@ export default function AdminFinanceiroPage() {
             <thead className="bg-white/5 text-ink-200 text-xs uppercase tracking-wider">
               <tr>
                 <th className="px-4 py-3 text-left">Consultor</th>
-                <th className="px-4 py-3 text-right">Consultas</th>
+                <th className="px-4 py-3 text-right">Atendimentos</th>
                 <th className="px-4 py-3 text-right">Ganho total</th>
                 <th className="px-4 py-3 text-right">Pago</th>
                 <th className="px-4 py-3 text-right">Pendente</th>
