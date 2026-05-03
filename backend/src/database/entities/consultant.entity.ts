@@ -22,6 +22,11 @@ export class Consultant {
   @Column({ type: 'text', nullable: true })
   bio: string;
 
+  // URL pública do avatar do consultor (servida estaticamente em /api/uploads/avatars/...)
+  // Editável APENAS pelo admin via POST /admin/consultants/:id/avatar.
+  @Column({ type: 'text', nullable: true })
+  avatarUrl: string | null;
+
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 1.0 })
   pricePerMinute: number;
 

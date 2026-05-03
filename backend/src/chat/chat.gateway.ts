@@ -281,15 +281,73 @@ export class ChatGateway
       callId: data.callId,
       consultationId: consultation.id,
       consultantId: data.consultantId,
+      kind,
     });
 
     client.emit('call-started', {
       callId: data.callId,
       consultationId: consultation.id,
       clientId: data.clientId,
+      kind,
     });
 
     this.startBillingTick(consultation.id);
+  }
+
+  // -------- WebRTC signaling (Fase 2) --------
+  // O servidor não inspeciona SDP/ICE — só repassa entre os 2 participantes da
+  // sala (consultationId). Authz: só quem participa da consulta pode emitir
+  // (validado pela existência do socket na sala via join-consultation).
+
+  @SubscribeMessage('webrtc-offer')
+  handleWebrtcOffer(client: Socket, data: { consultationId: string; sdp: any }) {
+    if (!data?.consultationId || !data?.sdp) return;
+    client.to(data.consultationId).emit('webrtc-offer', {
+      consultationId: data.consultationId,
+      sdp: data.sdp,
+    });
+  }
+
+  @SubscribeMessage('webrtc-answer')
+  handleWebrtcAnswer(client: Socket, data: { consultationId: string; sdp: any }) {
+    if (!data?.consultationId || !data?.sdp) return;
+    client.to(data.consultationId).emit('webrtc-answer', {
+      consultationId: data.consultationId,
+      sdp: data.sdp,
+    });
+  }
+
+  @SubscribeMessage('webrtc-ice-candidate')
+  handleWebrtcIce(
+    client: Socket,
+    data: { consultationId: string; candidate: any },
+  ) {
+    if (!data?.consultationId || !data?.candidate) return;
+    client.to(data.consultationId).emit('webrtc-ice-candidate', {
+      consultationId: data.consultationId,
+      candidate: data.candidate,
+    });
+  }
+
+  @SubscribeMessage('webrtc-call-end')
+  handleWebrtcCallEnd(
+    client: Socket,
+    data: { consultationId: string; reason?: string },
+  ) {
+    if (!data?.consultationId) return;
+    client.to(data.consultationId).emit('webrtc-call-end', {
+      consultationId: data.consultationId,
+      reason: data.reason || 'peer',
+    });
+  }
+
+  @SubscribeMessage('webrtc-media-toggle')
+  handleWebrtcMediaToggle(
+    client: Socket,
+    data: { consultationId: string; mic?: boolean; camera?: boolean },
+  ) {
+    if (!data?.consultationId) return;
+    client.to(data.consultationId).emit('webrtc-media-toggle', data);
   }
 
   @SubscribeMessage('decline-call')
@@ -444,6 +502,30 @@ export class ChatGateway
           costSoFar: result.costSoFar,
           pricePerMinute: result.pricePerMinute,
         });
+
+        // Tick separado para o consultor com valor LÍQUIDO (já com comissão
+        // aplicada). O consultor não deve ver o valor cheio cobrado do cliente.
+        try {
+          const consultation = await this.chatService.findConsultation(consultationId);
+          if (consultation?.consultantId) {
+            const consultant: any = await this.consultantsService.findById(
+              consultation.consultantId,
+            );
+            const percent = Number(consultant?.commissionPercent ?? 50);
+            const consultantEarnings = +(result.costSoFar * (percent / 100)).toFixed(2);
+            this.server
+              .to(`consultant:${consultation.consultantId}`)
+              .emit('billing-tick-consultant', {
+                consultationId,
+                minutesElapsed: result.minutesElapsed,
+                minutesCharged: result.minutesCharged,
+                consultantEarnings,
+                commissionPercent: percent,
+              });
+          }
+        } catch (e: any) {
+          this.logger.warn(`billing-tick-consultant failed: ${e?.message}`);
+        }
 
         const minutesLeft =
           result.pricePerMinute > 0

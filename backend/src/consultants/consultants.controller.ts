@@ -23,6 +23,7 @@ function toPublic(c: any, isOnline?: boolean) {
     name: c.name,
     specialty: c.specialty,
     bio: c.bio,
+    avatarUrl: c.avatarUrl ?? null,
     rating: c.rating,
     pricePerMinute: c.pricePerMinute,
     isAvailable: c.isAvailable,
@@ -75,21 +76,17 @@ export class ConsultantsController {
     return this.consultantsService.findById(req.user.id);
   }
 
+  // Edição do perfil do consultor é exclusiva do administrador.
+  // O consultor não pode alterar nome, e-mail, especialidade, bio, preço ou avatar.
+  // Mantemos a rota apenas para devolver um 403 explicativo caso algum cliente
+  // antigo (ou cache) ainda chame o endpoint.
   @Patch('me')
   @UseGuards(AuthGuard('jwt'))
-  async updateMe(
-    @Request() req,
-    @Body()
-    body: {
-      name?: string;
-      email?: string;
-      specialty?: string;
-      bio?: string;
-      pricePerMinute?: number;
-    },
-  ) {
+  async updateMe(@Request() req) {
     if (req.user.role !== 'consultant') throw new ForbiddenException();
-    return this.consultantsService.updateProfile(req.user.id, body);
+    throw new ForbiddenException(
+      'Edição de perfil é feita apenas pelo administrador. Solicite as alterações ao admin.',
+    );
   }
 
   @Patch('me/status')

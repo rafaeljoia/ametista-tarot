@@ -15,6 +15,7 @@ import { MailModule } from './mail/mail.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { AdminModule } from './admin/admin.module';
 import { SystemSettingsModule } from './system-settings/system-settings.module';
+import { WebrtcModule } from './webrtc/webrtc.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseConfig } from './config/database.config';
@@ -37,6 +38,7 @@ import { DatabaseConfig } from './config/database.config';
     ReviewsModule,
     AdminModule,
     SystemSettingsModule,
+    WebrtcModule,
   ],
   controllers: [AppController],
   providers: [AppService],

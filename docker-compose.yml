@@ -94,6 +94,26 @@ services:
       - "traefik.http.routers.ametista.priority=10"
       - "traefik.http.services.ametista.loadbalancer.server.port=3000"
 
+  # coturn — TURN/STUN para WebRTC (voz/vídeo). network_mode:host é
+  # OBRIGATÓRIO para TURN funcionar atrás do NAT da Hostinger; bridge não
+  # serve. Por isso este serviço fica fora da dokploy-network.
+  # Se TURN_SHARED_SECRET não estiver setado, o backend cai em STUN-only e o
+  # coturn pode ficar parado (basta `docker compose up -d coturn` quando setar).
+  coturn:
+    image: coturn/coturn:4.6
+    container_name: ametista_coturn
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./coturn/turnserver.conf:/etc/coturn/turnserver.conf.template:ro
+    environment:
+      TURN_SHARED_SECRET: ${TURN_SHARED_SECRET:-}
+    # Substitui o placeholder pelo segredo real e sobe o coturn.
+    entrypoint: >
+      sh -c 'sed "s|__REPLACED_AT_BOOT__|$${TURN_SHARED_SECRET}|g"
+             /etc/coturn/turnserver.conf.template > /etc/coturn/turnserver.conf
+             && exec turnserver -c /etc/coturn/turnserver.conf'
+
 volumes:
   postgres_data:
   redis_data:

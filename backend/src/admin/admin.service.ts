@@ -182,6 +182,17 @@ export class AdminService {
     return rest;
   }
 
+  // Define ou remove o avatar do consultor. Apenas chamado por endpoints
+  // protegidos por AdminGuard. `url=null` limpa o avatar.
+  async setConsultantAvatar(id: string, url: string | null) {
+    const consultant = await this.consultants.findOne({ where: { id } });
+    if (!consultant) throw new NotFoundException();
+    consultant.avatarUrl = url;
+    await this.consultants.save(consultant);
+    const { password, ...rest } = consultant;
+    return rest;
+  }
+
   // -------------------- USUÁRIOS --------------------
 
   async listUsers(q?: string, limit = 100, offset = 0) {

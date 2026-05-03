@@ -1,19 +1,40 @@
 import {
+  BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
   Post,
   Query,
   Request,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import { mkdirSync } from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 import { AdminService } from './admin.service';
 import { AdminGuard } from './admin.guard';
 import { ReviewsService } from '../reviews/reviews.service';
 import { SystemSettingsService } from '../system-settings/system-settings.service';
+
+// Upload de avatar do consultor (somente admin) — vai para uploads/avatars
+// e é servido publicamente em /api/uploads/avatars/<filename>.
+const UPLOAD_ROOT = process.env.UPLOAD_DIR || join(process.cwd(), 'uploads');
+const AVATARS_DIR = join(UPLOAD_ROOT, 'avatars');
+try {
+  mkdirSync(AVATARS_DIR, { recursive: true });
+} catch {
+  // ignore
+}
+const AVATAR_ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const AVATAR_MAX_BYTES = 5 * 1024 * 1024; // 5MB
 
 @Controller('admin')
 export class AdminController {
@@ -112,6 +133,49 @@ export class AdminController {
   @UseGuards(AuthGuard('jwt'), AdminGuard)
   async updateConsultant(@Param('id') id: string, @Body() body: any) {
     return this.admin.updateConsultant(id, body);
+  }
+
+  // Upload de avatar do consultor — apenas admin.
+  @Post('consultants/:id/avatar')
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: AVATARS_DIR,
+        filename: (_req, file, cb) => {
+          const ext = (extname(file.originalname) || '.bin').toLowerCase();
+          cb(null, `${Date.now()}-${uuidv4()}${ext}`);
+        },
+      }),
+      limits: { fileSize: AVATAR_MAX_BYTES },
+      fileFilter: (_req, file, cb) => {
+        if (!AVATAR_ALLOWED_MIME.has(file.mimetype)) {
+          cb(
+            new BadRequestException(
+              'Tipo de arquivo não suportado (use jpg, png ou webp)',
+            ),
+            false,
+          );
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async uploadConsultantAvatar(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('Arquivo ausente');
+    const url = `/api/uploads/avatars/${file.filename}`;
+    return this.admin.setConsultantAvatar(id, url);
+  }
+
+  // Remover avatar do consultor — apenas admin.
+  @Delete('consultants/:id/avatar')
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
+  async clearConsultantAvatar(@Param('id') id: string) {
+    return this.admin.setConsultantAvatar(id, null);
   }
 
   // Usuários

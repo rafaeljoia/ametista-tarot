@@ -14,6 +14,7 @@ interface Consultant {
   email: string
   specialty: string
   bio: string | null
+  avatarUrl: string | null
   pricePerMinute: number
   commissionPercent: number
   rating: number
@@ -23,11 +24,19 @@ interface Consultant {
   createdAt: string
 }
 
+const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/api\/?$/, '')
+function avatarSrc(url: string | null | undefined): string | undefined {
+  if (!url) return undefined
+  if (/^https?:\/\//i.test(url)) return url
+  return `${API_ORIGIN}${url}`
+}
+
 const EMPTY: Partial<Consultant> & { password?: string } = {
   name: '',
   email: '',
   specialty: 'Tarot',
   bio: '',
+  avatarUrl: null,
   pricePerMinute: 1,
   commissionPercent: 50,
   isActive: true,
@@ -43,6 +52,47 @@ export default function AdminConsultoresPage() {
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const [avatarError, setAvatarError] = useState<string | null>(null)
+
+  async function uploadAvatar(file: File) {
+    if (!editing?.id) {
+      setAvatarError('Salve o consultor antes de enviar o avatar.')
+      return
+    }
+    setAvatarUploading(true)
+    setAvatarError(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const r = await adminClient().post(
+        `/admin/consultants/${editing.id}/avatar`,
+        fd,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      )
+      setEditing((e) => (e ? { ...e, avatarUrl: r.data?.avatarUrl ?? null } : e))
+      load()
+    } catch (e: any) {
+      setAvatarError(e.response?.data?.message || 'Falha ao enviar avatar')
+    } finally {
+      setAvatarUploading(false)
+    }
+  }
+
+  async function clearAvatar() {
+    if (!editing?.id) return
+    setAvatarUploading(true)
+    setAvatarError(null)
+    try {
+      const r = await adminClient().delete(`/admin/consultants/${editing.id}/avatar`)
+      setEditing((e) => (e ? { ...e, avatarUrl: r.data?.avatarUrl ?? null } : e))
+      load()
+    } catch (e: any) {
+      setAvatarError(e.response?.data?.message || 'Falha ao remover avatar')
+    } finally {
+      setAvatarUploading(false)
+    }
+  }
 
   function load() {
     setLoading(true)
@@ -173,6 +223,67 @@ export default function AdminConsultoresPage() {
       >
         {editing && (
           <div className="space-y-3">
+            {/* Avatar — só pode ser enviado depois que o consultor existe (precisa de id). */}
+            <div className="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/10">
+              <div className="shrink-0">
+                {editing.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarSrc(editing.avatarUrl)}
+                    alt={editing.name || 'avatar'}
+                    className="w-16 h-16 rounded-full object-cover ring-1 ring-white/10"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-ink-700 ring-1 ring-white/10 flex items-center justify-center text-ink-100 text-lg">
+                    {(editing.name || '?').slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-white font-medium">Foto do consultor</p>
+                <p className="text-xs text-ink-300 mt-0.5">
+                  {editing.id
+                    ? 'JPG, PNG ou WEBP, até 5MB. Substitui a foto atual.'
+                    : 'Salve o consultor primeiro para enviar a foto.'}
+                </p>
+                {avatarError && (
+                  <p className="text-xs text-red-300 mt-1">{avatarError}</p>
+                )}
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <label
+                    className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs cursor-pointer border ${
+                      editing.id && !avatarUploading
+                        ? 'bg-mystic-500/20 border-mystic-400/30 text-mystic-100 hover:bg-mystic-500/30'
+                        : 'bg-white/5 border-white/10 text-ink-400 cursor-not-allowed'
+                    }`}
+                  >
+                    {avatarUploading ? 'Enviando…' : editing.avatarUrl ? 'Trocar foto' : 'Enviar foto'}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      disabled={!editing.id || avatarUploading}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0]
+                        if (f) uploadAvatar(f)
+                        e.target.value = ''
+                      }}
+                    />
+                  </label>
+                  {editing.avatarUrl && editing.id && (
+                    <button
+                      type="button"
+                      onClick={clearAvatar}
+                      disabled={avatarUploading}
+                      className="px-3 py-1.5 rounded-lg text-xs border border-white/10 bg-white/5 text-ink-200 hover:bg-white/10 disabled:opacity-50"
+                    >
+                      Remover
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="grid sm:grid-cols-2 gap-3">
               <Input
                 label="Nome"

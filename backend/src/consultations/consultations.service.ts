@@ -45,16 +45,29 @@ export class ConsultationsService {
       counterparts.map((c) => [c.id, c] as [string, any]),
     );
 
+    // Para o consultor, precisamos da comissão dele para devolver creditsUsed
+    // já como valor LÍQUIDO (regra de produto: consultor nunca vê o valor cheio).
+    let percentByConsultant = new Map<string, number>();
+    if (role === 'consultant') {
+      const c = await this.consultantsRepo.findOne({ where: { id } });
+      if (c) percentByConsultant.set(c.id, Number(c.commissionPercent ?? 50));
+    }
+
     return items.map((c) => {
       const other =
         role === 'consultant' ? map.get(c.clientId) : map.get(c.consultantId);
+      const grossCredits = Number(c.creditsUsed || 0);
+      const credits =
+        role === 'consultant'
+          ? +(grossCredits * ((percentByConsultant.get(c.consultantId) ?? 50) / 100)).toFixed(2)
+          : grossCredits;
       return {
         id: c.id,
         clientId: c.clientId,
         consultantId: c.consultantId,
         status: c.status,
         minutesUsed: Number(c.minutesUsed || 0),
-        creditsUsed: Number(c.creditsUsed || 0),
+        creditsUsed: credits,
         startedAt: c.startedAt,
         endedAt: c.endedAt,
         createdAt: c.createdAt,
@@ -77,13 +90,20 @@ export class ConsultationsService {
     });
     const client = await this.usersRepo.findOne({ where: { id: c.clientId } });
 
+    // Consultor recebe sempre creditsUsed já LÍQUIDO (após comissão).
+    const grossCredits = Number(c.creditsUsed || 0);
+    const credits =
+      role === 'consultant'
+        ? +(grossCredits * (Number(consultant?.commissionPercent ?? 50) / 100)).toFixed(2)
+        : grossCredits;
+
     return {
       id: c.id,
       clientId: c.clientId,
       consultantId: c.consultantId,
       status: c.status,
       minutesUsed: Number(c.minutesUsed || 0),
-      creditsUsed: Number(c.creditsUsed || 0),
+      creditsUsed: credits,
       startedAt: c.startedAt,
       endedAt: c.endedAt,
       createdAt: c.createdAt,

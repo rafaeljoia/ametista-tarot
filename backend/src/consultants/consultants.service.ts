@@ -27,6 +27,7 @@ export class ConsultantsService {
         'name',
         'specialty',
         'bio',
+        'avatarUrl',
         'rating',
         'pricePerMinute',
         'isAvailable',
@@ -89,6 +90,7 @@ export class ConsultantsService {
         'name',
         'specialty',
         'bio',
+        'avatarUrl',
         'rating',
         'pricePerMinute',
         'isAvailable',
@@ -205,8 +207,16 @@ export class ConsultantsService {
       }),
     ]);
 
+    // Consultor enxerga sempre o valor LÍQUIDO (após comissão da plataforma).
+    const percent = Number(consultant.commissionPercent ?? 50) / 100;
     const sumCredits = (arr: Consultation[]) =>
-      arr.reduce((s, c) => s + Number(c.creditsUsed || 0), 0);
+      +arr.reduce((s, c) => s + Number(c.creditsUsed || 0) * percent, 0).toFixed(2);
+
+    // totalEarnings = soma de TODAS as consultas completadas (não só as 10 últimas).
+    const allCompleted = await this.consultationsRepository.find({
+      where: { consultantId, status: 'completed' },
+      select: ['creditsUsed'],
+    });
 
     return {
       consultationsToday: today.length,
@@ -216,13 +226,16 @@ export class ConsultantsService {
       earningsToday: sumCredits(today),
       earningsWeek: sumCredits(week),
       earningsMonth: sumCredits(month),
+      totalEarnings: sumCredits(allCompleted),
+      commissionPercent: Number(consultant.commissionPercent ?? 50),
       rating: Number(consultant.rating),
       recentConsultations: all.map((c) => ({
         id: c.id,
         startedAt: c.startedAt,
         endedAt: c.endedAt,
         minutesUsed: Number(c.minutesUsed),
-        creditsUsed: Number(c.creditsUsed),
+        // creditsUsed devolvido ao consultor já é LÍQUIDO.
+        creditsUsed: +(Number(c.creditsUsed || 0) * percent).toFixed(2),
       })),
     };
   }

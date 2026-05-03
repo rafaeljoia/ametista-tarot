@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import axios from 'axios'
 import { io, Socket } from 'socket.io-client'
@@ -44,7 +44,11 @@ const STATUS_DOT: Record<string, string> = {
 export default function CallingPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const consultantId = params.id as string
+  const kindParam = searchParams.get('kind')
+  const kind: 'chat' | 'voice' | 'video' =
+    kindParam === 'voice' || kindParam === 'video' ? kindParam : 'chat'
 
   const [consultant, setConsultant] = useState<Consultant | null>(null)
   const [callStatus, setCallStatus] = useState<'calling' | 'declined' | 'failed' | 'accepted'>('calling')
@@ -101,6 +105,7 @@ export default function CallingPage() {
           consultantId,
           clientId: user.id,
           clientName: user.name,
+          kind,
         })
       }, 300)
       playRing()
@@ -117,7 +122,12 @@ export default function CallingPage() {
       if (ringInterval.current) clearInterval(ringInterval.current)
       if (dotsInterval.current) clearInterval(dotsInterval.current)
       setTimeout(() => {
-        router.push(`/chat/${consultantId}?consultationId=${data.consultationId}`)
+        // Roteia conforme o tipo de consulta. Chat → tela atual; voz/vídeo → /call.
+        if (kind === 'voice' || kind === 'video') {
+          router.push(`/call/${data.consultationId}?kind=${kind}`)
+        } else {
+          router.push(`/chat/${consultantId}?consultationId=${data.consultationId}`)
+        }
       }, 800)
     })
     socket.on('call-declined', () => {

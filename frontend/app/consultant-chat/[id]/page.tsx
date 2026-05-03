@@ -179,8 +179,13 @@ export default function ConsultantChatPage() {
       setIsTyping(false)
     })
 
-    socket.on('billing-tick', (data: any) => {
-      if (typeof data.costSoFar === 'number') setEarned(data.costSoFar)
+    // Consultor escuta o tick específico dele (valor já LÍQUIDO, com comissão).
+    // O evento 'billing-tick' geral carrega o valor cheio cobrado do cliente
+    // — não deve ser exibido pro consultor.
+    socket.on('billing-tick-consultant', (data: any) => {
+      if (typeof data.consultantEarnings === 'number') {
+        setEarned(data.consultantEarnings)
+      }
     })
 
     socket.on('send-error', (data: any) => {

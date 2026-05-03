@@ -220,32 +220,28 @@ export default function ConsultantProfilePage() {
                         R$ {(pricing?.chat ?? 1).toFixed(2)}/min
                       </span>
                     </LinkButton>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        alert('Voz estará disponível em breve (Fase 3 do WebRTC).')
-                      }
-                      className="rounded-2xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.06] transition-colors px-5 py-4 text-left opacity-70 cursor-not-allowed"
-                      disabled
+                    <LinkButton
+                      href={`/calling/${consultant.id}?kind=voice`}
+                      variant="outline"
+                      size="lg"
+                      className="flex-col items-stretch text-left"
                     >
-                      <span className="block font-semibold text-white">🎙️ Voz</span>
-                      <span className="block text-xs text-ink-300 mt-1">
-                        R$ {(pricing?.voice ?? 3).toFixed(2)}/min · em breve
+                      <span className="block font-semibold">🎙️ Voz</span>
+                      <span className="block text-xs opacity-80 mt-1">
+                        R$ {(pricing?.voice ?? 3).toFixed(2)}/min
                       </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        alert('Vídeo estará disponível em breve (Fase 5 do WebRTC).')
-                      }
-                      className="rounded-2xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.06] transition-colors px-5 py-4 text-left opacity-70 cursor-not-allowed"
-                      disabled
+                    </LinkButton>
+                    <LinkButton
+                      href={`/calling/${consultant.id}?kind=video`}
+                      variant="outline"
+                      size="lg"
+                      className="flex-col items-stretch text-left"
                     >
-                      <span className="block font-semibold text-white">📹 Vídeo</span>
-                      <span className="block text-xs text-ink-300 mt-1">
-                        R$ {(pricing?.video ?? 5).toFixed(2)}/min · em breve
+                      <span className="block font-semibold">📹 Vídeo</span>
+                      <span className="block text-xs opacity-80 mt-1">
+                        R$ {(pricing?.video ?? 5).toFixed(2)}/min
                       </span>
-                    </button>
+                    </LinkButton>
                   </div>
                   <LinkButton
                     href="/dashboard"

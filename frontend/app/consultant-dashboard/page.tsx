@@ -118,11 +118,16 @@ export default function ConsultantDashboardPage() {
       setIncomingCall(null)
       if (bellInterval.current) clearInterval(bellInterval.current)
     })
-    socket.on('call-started', (data: { consultationId: string; clientId: string }) => {
+    socket.on('call-started', (data: { consultationId: string; clientId: string; kind?: 'chat' | 'voice' | 'video' }) => {
       setStatus('in-call'); setIncomingCall(null)
       setMyStatus('in_consultation')
       if (bellInterval.current) clearInterval(bellInterval.current)
-      router.push(`/consultant-chat/${data.consultationId}?clientId=${data.clientId}`)
+      // Roteia conforme tipo de consulta. Chat → tela legacy; voz/vídeo → /consultant-call
+      if (data.kind === 'voice' || data.kind === 'video') {
+        router.push(`/consultant-call/${data.consultationId}?kind=${data.kind}&clientId=${data.clientId}`)
+      } else {
+        router.push(`/consultant-chat/${data.consultationId}?clientId=${data.clientId}`)
+      }
     })
 
     // Server forced this session out (e.g. 20min in 'busy' → auto-logout).
