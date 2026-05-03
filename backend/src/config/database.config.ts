@@ -10,6 +10,7 @@ import { ConsultantAvailabilityAlert } from '../database/entities/consultant-ava
 import { Review } from '../database/entities/review.entity';
 import { Admin } from '../database/entities/admin.entity';
 import { CommissionPayout } from '../database/entities/commission-payout.entity';
+import { SystemSetting } from '../database/entities/system-setting.entity';
 
 export const DatabaseConfig = (): TypeOrmModuleOptions => ({
   type: 'postgres',
@@ -30,6 +31,7 @@ export const DatabaseConfig = (): TypeOrmModuleOptions => ({
     Review,
     Admin,
     CommissionPayout,
+    SystemSetting,
   ],
   synchronize: true,
   logging: process.env.NODE_ENV === 'development',
