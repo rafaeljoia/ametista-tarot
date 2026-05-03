@@ -24,7 +24,10 @@ const KEYS = {
   postCallEnabled: 'post_call_offer_enabled',
   postCallPrice: 'post_call_offer_price',
   postCallText: 'post_call_offer_text',
+  offeringDeadlineHours: 'offering_deadline_hours',
 } as const;
+
+const OFFERING_DEADLINE_DEFAULT_HOURS = 24;
 
 const DEFAULTS: Pricing = { chat: 1, voice: 3, video: 5 };
 const POST_CALL_DEFAULT: PostCallOffer = {
@@ -126,6 +129,26 @@ export class SystemSettingsService {
     }
     this.offerCache = null;
     return this.getPostCallOffer();
+  }
+
+  // ----- Prazo das oferendas (horas) -----
+
+  async getOfferingDeadlineHours(): Promise<number> {
+    const row = await this.repo.findOne({ where: { key: KEYS.offeringDeadlineHours } });
+    const n = this.toNum(row?.value, OFFERING_DEADLINE_DEFAULT_HOURS);
+    return Math.max(1, Math.min(24 * 30, Math.floor(n)));
+  }
+
+  async setOfferingDeadlineHours(hours: number): Promise<number> {
+    if (!Number.isFinite(hours) || hours < 1 || hours > 24 * 30) {
+      throw new Error('Prazo deve estar entre 1 e 720 horas');
+    }
+    const value = String(Math.floor(hours));
+    await this.repo.upsert(
+      { key: KEYS.offeringDeadlineHours, value } as any,
+      { conflictPaths: ['key'] },
+    );
+    return this.getOfferingDeadlineHours();
   }
 
   private toNum(v: any, def: number): number {

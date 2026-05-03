@@ -31,4 +31,26 @@ export class PricingController {
       text: body?.text,
     });
   }
+
+  // Público — frontend usa pra exibir o prazo restante das oferendas
+  @Get('offering-settings')
+  async getOfferingSettings() {
+    const [offer, deadlineHours] = await Promise.all([
+      this.settings.getPostCallOffer(),
+      this.settings.getOfferingDeadlineHours(),
+    ]);
+    return {
+      enabled: offer.enabled,
+      price: offer.price,
+      deadlineHours,
+    };
+  }
+
+  // Admin — atualiza prazo das oferendas (em horas)
+  @Patch('admin/offering-deadline')
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
+  async updateOfferingDeadline(@Body() body: { hours: number }) {
+    const hours = await this.settings.setOfferingDeadlineHours(Number(body?.hours));
+    return { deadlineHours: hours };
+  }
 }

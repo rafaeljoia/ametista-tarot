@@ -20,8 +20,8 @@ export class ServiceOrder {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
-  consultationId: string;
+  @Column({ type: 'uuid', nullable: true })
+  consultationId: string | null;
 
   @Column({ type: 'uuid' })
   clientId: string;
@@ -41,7 +41,7 @@ export class ServiceOrder {
   @Column({ type: 'varchar', length: 320, nullable: true })
   consultantEmail: string | null;
 
-  // Hoje: 'blessing' (banhos/orações). Futuramente outros tipos.
+  // 'bath' (banho) | 'prayer' (oração) | 'blessing' (legado, post-call genérico)
   @Column({ type: 'varchar', length: 32, default: 'blessing' })
   kind: string;
 
@@ -49,12 +49,24 @@ export class ServiceOrder {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   priceCredits: number;
 
-  // 'pending' (pago, aguarda envio do consultor) | 'sent' (consultor marcou como enviado) | 'cancelled'
+  // 'pending' (pago, aguarda entrega) | 'delivered' (consultor enviou) | 'expired' (passou prazo, reembolsado) | 'sent' (legado) | 'cancelled'
   @Column({ type: 'varchar', length: 16, default: 'pending' })
   status: string;
 
   @Column({ type: 'text', nullable: true })
   notes: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  requestMessage: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  deliveryText: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  deadlineAt: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  deliveredAt: Date | null;
 
   @Column({ type: 'timestamptz', nullable: true })
   sentAt: Date | null;

@@ -17,7 +17,29 @@ import { ServiceOrdersService } from './service-orders.service';
 export class ServiceOrdersController {
   constructor(private readonly orders: ServiceOrdersService) {}
 
-  /** Cliente autenticado solicita indicação de banhos/orações */
+  /** Cliente solicita oferenda (banho/oração) — endpoint genérico (usa-se em qualquer tela) */
+  @Post('service-orders/request')
+  @UseGuards(AuthGuard('jwt'))
+  async requestOffering(
+    @Request() req: any,
+    @Body()
+    body: {
+      consultantId: string;
+      kind: 'bath' | 'prayer';
+      consultationId?: string;
+      message?: string;
+    },
+  ) {
+    return this.orders.requestOffering({
+      userId: req.user.sub,
+      consultantId: body?.consultantId,
+      kind: body?.kind,
+      consultationId: body?.consultationId || null,
+      message: body?.message || null,
+    });
+  }
+
+  /** Cliente: solicita do post-call (legado, mantém compatibilidade) */
   @Post('service-orders/blessing')
   @UseGuards(AuthGuard('jwt'))
   async createBlessing(
@@ -30,14 +52,37 @@ export class ServiceOrdersController {
     });
   }
 
-  /** Consultor lista ordens recebidas */
-  @Get('consultant/service-orders')
+  /** Cliente: lista as próprias oferendas */
+  @Get('me/service-orders')
   @UseGuards(AuthGuard('jwt'))
   async myOrders(@Request() req: any) {
+    const items = await this.orders.listForClient(req.user.sub);
+    return { items };
+  }
+
+  /** Consultor: lista as oferendas recebidas */
+  @Get('consultant/service-orders')
+  @UseGuards(AuthGuard('jwt'))
+  async consultantOrders(@Request() req: any) {
     return this.orders.listForConsultant(req.user.sub);
   }
 
-  /** Consultor marca como enviada */
+  /** Consultor: entrega (texto) — novo fluxo */
+  @Post('consultant/service-orders/:id/deliver')
+  @UseGuards(AuthGuard('jwt'))
+  async deliver(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { deliveryText: string },
+  ) {
+    return this.orders.deliverOffering({
+      orderId: id,
+      consultantId: req.user.sub,
+      deliveryText: body?.deliveryText || '',
+    });
+  }
+
+  /** Consultor: marcar como enviado (legado, mantém para ordens antigas) */
   @Patch('consultant/service-orders/:id/sent')
   @UseGuards(AuthGuard('jwt'))
   async markSent(

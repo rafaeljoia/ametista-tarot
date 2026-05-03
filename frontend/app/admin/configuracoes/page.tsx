@@ -36,20 +36,38 @@ const STATUS_LABEL: Record<string, string> = {
 export default function AdminConfigPage() {
   const [offer, setOffer] = useState<Offer | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
+  const [deadlineHours, setDeadlineHours] = useState<number>(24)
+  const [savingDeadline, setSavingDeadline] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
   async function load() {
     try {
-      const [{ data: o }, { data: list }] = await Promise.all([
+      const [{ data: o }, { data: list }, { data: os }] = await Promise.all([
         axios.get(`${API}/post-call-offer`),
         adminClient().get('/admin/service-orders').catch(() => ({ data: { items: [] } })),
+        axios.get(`${API}/offering-settings`).catch(() => ({ data: { deadlineHours: 24 } })),
       ])
       setOffer(o)
       setOrders(list?.items || [])
+      setDeadlineHours(Number(os?.deadlineHours) || 24)
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao carregar configurações')
+    }
+  }
+
+  async function saveDeadline() {
+    setSavingDeadline(true)
+    setError(''); setSuccess('')
+    try {
+      const { data } = await adminClient().patch('/admin/offering-deadline', { hours: Number(deadlineHours) })
+      setDeadlineHours(Number(data?.deadlineHours) || 24)
+      setSuccess('Prazo das oferendas atualizado')
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erro ao salvar prazo')
+    } finally {
+      setSavingDeadline(false)
     }
   }
 
@@ -132,6 +150,30 @@ export default function AdminConfigPage() {
               <Button onClick={save} loading={loading}>Salvar configurações</Button>
             </>
           )}
+        </div>
+      </Card>
+
+      <Card>
+        <div className="p-5 space-y-4">
+          <div>
+            <h2 className="text-white font-medium">Prazo de entrega das oferendas</h2>
+            <p className="text-xs text-ink-300 mt-1">
+              Quanto tempo o(a) consultor(a) tem para entregar uma oferenda solicitada antes do pedido expirar e o cliente ser reembolsado automaticamente.
+            </p>
+          </div>
+          <div className="flex items-end gap-3 max-w-sm">
+            <Input
+              label="Prazo (horas)"
+              type="number"
+              min="1"
+              max="720"
+              step="1"
+              value={deadlineHours}
+              onChange={(e) => setDeadlineHours(Number(e.target.value))}
+            />
+            <Button onClick={saveDeadline} loading={savingDeadline}>Salvar prazo</Button>
+          </div>
+          <p className="text-xs text-ink-300">Mínimo 1h, máximo 720h (30 dias). Padrão: 24h.</p>
         </div>
       </Card>
 

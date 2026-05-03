@@ -110,6 +110,8 @@ export function Navbar({ variant = 'public' }: NavbarProps) {
           {variant === 'client' && user && (
             <>
               <Link href="/dashboard" className={navLink(pathname === '/dashboard')}>Consultores</Link>
+              <Link href="/dashboard/oferendas" className={navLink(pathname === '/dashboard/oferendas')}>Oferendas</Link>
+              <Link href="/dashboard/inbox" className={navLink(pathname === '/dashboard/inbox')}>Caixa de entrada</Link>
               <Link href="/perfil" className={navLink(pathname === '/perfil')}>Meu perfil</Link>
 
               <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/[0.04] border border-white/10 ml-2">
@@ -229,6 +231,8 @@ export function Navbar({ variant = 'public' }: NavbarProps) {
                 {user.name} · <span className="text-ink-100 tabular-nums">{Number(user.credits ?? 0)} créditos</span>
               </div>
               <Link href="/dashboard" className="block px-3 py-2 rounded-md hover:bg-white/[0.05]">Consultores</Link>
+              <Link href="/dashboard/oferendas" className="block px-3 py-2 rounded-md hover:bg-white/[0.05]">Oferendas</Link>
+              <Link href="/dashboard/inbox" className="block px-3 py-2 rounded-md hover:bg-white/[0.05]">Caixa de entrada</Link>
               <Link href="/perfil" className="block px-3 py-2 rounded-md hover:bg-white/[0.05]">Meu perfil</Link>
               <Link href="/comprar-creditos" className="block px-3 py-2 rounded-md hover:bg-white/[0.05] text-ink-100">Comprar créditos</Link>
               <button onClick={logoutClient} className="block w-full text-left px-3 py-2 rounded-md text-red-300 hover:bg-red-500/10">

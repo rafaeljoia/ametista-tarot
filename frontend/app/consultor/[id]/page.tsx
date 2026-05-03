@@ -10,6 +10,7 @@ import { Avatar } from '../../../components/ui/Avatar'
 import { Badge } from '../../../components/ui/Badge'
 import { LinkButton, Button } from '../../../components/ui/Button'
 import { PageLoader } from '../../../components/ui/Spinner'
+import { RequestOfferingModal } from '../../../components/RequestOfferingModal'
 
 interface Consultant {
   id: string
@@ -55,6 +56,7 @@ export default function ConsultantProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [offeringOpen, setOfferingOpen] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -243,23 +245,44 @@ export default function ConsultantProfilePage() {
                       </span>
                     </LinkButton>
                   </div>
-                  <LinkButton
-                    href="/dashboard"
-                    variant="outline"
-                    size="md"
-                    className="w-full sm:w-auto"
-                  >
-                    Ver outros consultores
-                  </LinkButton>
+                  <div className="flex flex-wrap gap-3">
+                    <LinkButton
+                      href="/dashboard"
+                      variant="outline"
+                      size="md"
+                    >
+                      Ver outros consultores
+                    </LinkButton>
+                    <Button
+                      variant="gold"
+                      size="md"
+                      onClick={() => setOfferingOpen(true)}
+                    >
+                      🌿 Pedir banho ou oração
+                    </Button>
+                  </div>
                 </div>
               ) : (
-                <div className="mt-10 grid sm:grid-cols-2 gap-3">
-                  <Button variant="ghost" size="lg" disabled>
-                    Consultor(a) indisponível
+                <div className="mt-10 space-y-3">
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <Button variant="ghost" size="lg" disabled>
+                      Consultor(a) indisponível
+                    </Button>
+                    <LinkButton href="/dashboard" variant="outline" size="lg">
+                      Ver outros consultores
+                    </LinkButton>
+                  </div>
+                  <Button
+                    variant="gold"
+                    size="lg"
+                    fullWidth
+                    onClick={() => setOfferingOpen(true)}
+                  >
+                    🌿 Pedir banho ou oração mesmo assim
                   </Button>
-                  <LinkButton href="/dashboard" variant="outline" size="lg">
-                    Ver outros consultores
-                  </LinkButton>
+                  <p className="text-xs text-ink-300 text-center">
+                    Você pode pedir uma oferenda mesmo com o(a) consultor(a) offline — ela tem um prazo para preparar e enviar.
+                  </p>
                 </div>
               )
             ) : (
@@ -275,6 +298,13 @@ export default function ConsultantProfilePage() {
           </div>
         </Card>
       </div>
+
+      <RequestOfferingModal
+        open={offeringOpen}
+        onClose={() => setOfferingOpen(false)}
+        consultantId={consultant.id}
+        consultantName={consultant.name}
+      />
     </main>
   )
 }

@@ -18,6 +18,7 @@ import { SystemSettingsModule } from './system-settings/system-settings.module';
 import { WebrtcModule } from './webrtc/webrtc.module';
 import { TermsModule } from './terms/terms.module';
 import { ServiceOrdersModule } from './service-orders/service-orders.module';
+import { InboxModule } from './inbox/inbox.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseConfig } from './config/database.config';
@@ -43,6 +44,7 @@ import { DatabaseConfig } from './config/database.config';
     WebrtcModule,
     TermsModule,
     ServiceOrdersModule,
+    InboxModule,
   ],
   controllers: [AppController],
   providers: [AppService],
