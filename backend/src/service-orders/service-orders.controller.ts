@@ -31,7 +31,7 @@ export class ServiceOrdersController {
     },
   ) {
     return this.orders.requestOffering({
-      userId: req.user.sub,
+      userId: req.user.id,
       consultantId: body?.consultantId,
       kind: body?.kind,
       consultationId: body?.consultationId || null,
@@ -47,7 +47,7 @@ export class ServiceOrdersController {
     @Body() body: { consultationId?: string },
   ) {
     return this.orders.createBlessing({
-      userId: req.user.sub,
+      userId: req.user.id,
       consultationId: body?.consultationId || '',
     });
   }
@@ -56,7 +56,7 @@ export class ServiceOrdersController {
   @Get('me/service-orders')
   @UseGuards(AuthGuard('jwt'))
   async myOrders(@Request() req: any) {
-    const items = await this.orders.listForClient(req.user.sub);
+    const items = await this.orders.listForClient(req.user.id);
     return { items };
   }
 
@@ -64,7 +64,7 @@ export class ServiceOrdersController {
   @Get('consultant/service-orders')
   @UseGuards(AuthGuard('jwt'))
   async consultantOrders(@Request() req: any) {
-    return this.orders.listForConsultant(req.user.sub);
+    return this.orders.listForConsultant(req.user.id);
   }
 
   /** Consultor: entrega (texto) — novo fluxo */
@@ -77,7 +77,7 @@ export class ServiceOrdersController {
   ) {
     return this.orders.deliverOffering({
       orderId: id,
-      consultantId: req.user.sub,
+      consultantId: req.user.id,
       deliveryText: body?.deliveryText || '',
     });
   }
@@ -92,7 +92,7 @@ export class ServiceOrdersController {
   ) {
     return this.orders.markSent({
       orderId: id,
-      consultantId: req.user.sub,
+      consultantId: req.user.id,
       notes: body?.notes,
     });
   }
