@@ -97,7 +97,7 @@ export default function ConsultorPedidosPage() {
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-mystic-300">R$ {Number(o.priceCredits).toFixed(2)}</span>
-                        <Badge variant={o.status === 'sent' ? 'gold' : 'default'}>
+                        <Badge variant={o.status === 'sent' ? 'gold' : 'neutral'}>
                           {STATUS_LABEL[o.status]}
                         </Badge>
                       </div>
