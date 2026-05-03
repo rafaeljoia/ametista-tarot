@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
-import { ConsultantNavbar } from '../../../components/ConsultantNavbar'
+import { Navbar } from '../../../components/Navbar'
 import { Card } from '../../../components/ui/Card'
 import { Badge } from '../../../components/ui/Badge'
 import { PageLoader } from '../../../components/ui/Spinner'
@@ -73,7 +73,7 @@ export default function ConsultorPerfilReadOnlyPage() {
 
   return (
     <div className="min-h-screen bg-ink-950">
-      <ConsultantNavbar />
+      <Navbar variant="consultant" />
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-display text-white">Meu Perfil</h1>
