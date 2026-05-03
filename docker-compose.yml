@@ -10,9 +10,9 @@ services:
     container_name: ametista_postgres
     restart: always
     environment:
-      POSTGRES_USER: ametista
-      POSTGRES_PASSWORD: ametista123
-      POSTGRES_DB: ametista_tarot
+      POSTGRES_USER: ${POSTGRES_USER:-ametista}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no env do Dokploy}
+      POSTGRES_DB: ${POSTGRES_DB:-ametista_tarot}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -44,15 +44,22 @@ services:
     container_name: ametista_backend
     restart: always
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USERNAME: ametista
-      DB_PASSWORD: ametista123
-      DB_NAME: ametista_tarot
-      JWT_SECRET: your-super-secret-jwt-key-change-in-production
-      NODE_ENV: production
-      PORT: 3001
-      FRONTEND_URL: https://ametista.braviaglobal.com.br
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USERNAME: ${DB_USERNAME:-ametista}
+      DB_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no env do Dokploy}
+      DB_NAME: ${DB_NAME:-ametista_tarot}
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no env do Dokploy}
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-3001}
+      FRONTEND_URL: ${FRONTEND_URL}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      TURN_SHARED_SECRET: ${TURN_SHARED_SECRET:-}
+      TURN_HOST: ${TURN_HOST:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -79,7 +86,7 @@ services:
     container_name: ametista_frontend
     restart: always
     environment:
-      NEXT_PUBLIC_API_URL: https://ametista.braviaglobal.com.br/api
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     depends_on:
       - backend
     networks:
